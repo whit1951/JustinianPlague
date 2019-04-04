@@ -34,31 +34,32 @@ legend("right", c("Susceptible", "Infected", "Recovered"), pch = 1, col = 2:4)
 ratfleaSIR <- function(time, state, parameters) {
   with(as.list(c(state, parameters)), {
     #Rats
-    N_r<- S_r + I_r + R_r
+    N_r  <- S_r + I_r + R_r #Total number of rats
     dS_r <- -beta_r * S_r * Fl *(1-exp(-1*alpha*N_r))/N_r #Susceptible rats
-    dI_r <- -beta_r * S_r * Fl *(1-exp(-1*alpha*N_r))/N_r- gamma_r * I_r #Infected rats
+    dI_r <- beta_r * S_r * Fl *(1-exp(-1*alpha*N_r))/N_r- gamma_r * I_r #Infected rats
     dR_r <- g_r*gamma_r * I_r #Recovered rats
     dD_r <- (1-g_r)*gamma_r * I_r #Dead rats
 
     #Fleas
-    dH<-r_f*H*(1-H/K_f) #Fleas/rat
-    dFl<-(1-g_r)*gamma_r*I_r*H - d_f*Fl #Fleas in environment
+    dH  <- r_f*H*(1-H/K_f) #Fleas/rat
+    dFl <- (1-g_r)*gamma_r*I_r*H - d_f*Fl #Fleas in environment
     
     #Humans
-    N_h<- S_h + I_h + R_h
+    N_h<- S_h + I_h + R_h #Total number of humans
     dS_h<- -beta_h * S_h * Fl *(exp(-1*alpha*N_r))/N_h #susceptible humans
-    dI_h<- beta_h * S_h * Fl *(exp(-1*alpha*N_r))/N_h - gamma_h*I_h #infected humans
+    dE_h<- beta_h * S_h * Fl *(exp(-1*alpha*N_r))/N_h - sigma_h*E_h #exposed humans
+    dI_h<- sigma_h*E_h - gamma_h*I_h #infected humans
     dR_h<- g_h*gamma_h * I_h #recovered humans
     dD_h<- (1-g_h)*gamma_h * I_h #dead humans
     
-    return(list(c(dS_r, dI_r, dR_r, dD_r, dH, dFl, dS_h, dI_h, dR_h, dD_h)))
+    return(list(c(dS_r, dI_r, dR_r, dD_r, dH, dFl, dS_h, dE_h, dI_h, dR_h, dD_h)))
   })
 }
 
 #Define initial conditions and parameter values
-init <- c(S_r=50000, I_r=5000, R_r=0, D_r=0, H=5, Fl=0, S_h = 500, I_h = 100, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
-parameters <- c(beta_r = 1, alpha=3/50000, gamma_r = 1/5.2, g_r=0.1, r_f=0.0084, K_f=5, d_f=1/5, beta_h=1, gamma_h=0.1, g_h=0.2) #you can play with transmission and recovery rates here
-time <- seq(0, 100, by = .1) #how long to integrate over [time interval]?
+init <- c(S_r=500000, I_r=1, R_r=0, D_r=0, H=5, Fl=0, S_h = 500000, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(beta_r = 1, alpha=3/50000, gamma_r = 1/5.2, g_r=0.1, r_f=0.0084, K_f=5, d_f=1/5, beta_h=1, sigma_h= 1/6, gamma_h=0.1, g_h=0.2) #you can play with transmission and recovery rates here
+time <- seq(0, 200, by = .1) #how long to integrate over [time interval]?
 
 #Run ordinary differential equation solver
 out <- as.data.frame(ode(y = init, times = time, func = ratfleaSIR, parms = parameters))
@@ -73,9 +74,9 @@ matplot(time, out[,5:6], type = "l", main= "Fleas", xlab = "Time (days)", ylab =
         col = 1:2)
 legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
 
-matplot(time, out[,7:10], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
-        col = 1:4)
-legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:4)
+matplot(time, out[,7:11], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:5)
+legend("right", c("Susceptible", "Exposed", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
 
 
 
@@ -95,9 +96,9 @@ pneumonicSIR <- function(time, state, parameters) {
 }
 
 #Define initial conditions and parameter values
-init <- c(S_h = 500, E_h= 0, I_h = 1, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
-parameters <- c(beta_p = 0.5, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=0.04, d_h=0.04) #you can play with transmission and recovery rates here
-time <- seq(0, 10000, by= 1) #how long to integrate over [time interval]?
+init <- c(S_h = 500000, E_h= 0, I_h = 1, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(beta_p = 0.0734, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+time <- seq(0, 100, by= .01) #how long to integrate over [time interval]?
 
 #Run ordinary differential equation solver
 out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
@@ -107,4 +108,66 @@ out$time<-NULL
 matplot(time, out, type = "l", xlab = "Time (days)", ylab = "Number of Individuals", main = "Pneumonic Plague in People", lwd = 1, lty = 1, bty = "l", 
         col = 1:4)
 legend("right", c("Susceptible", "Exposed", "Infected", "Dead from Plague"), pch = 1, col = 1:4)
+
+
+
+# Flea/Rat/Human Model + Pneumonic Plague Transmission Route ----------------------------------------------------
+
+#Set up system of ordinary differential equations
+bubonic_pneumonicSEIR <- function(time, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    #Rats
+    N_r  <- S_r + I_r + R_r #Total number of rats
+    dS_r <- -beta_r * S_r * Fl *(1-exp(-1*alpha*N_r))/N_r #Susceptible rats
+    dI_r <- beta_r * S_r * Fl *(1-exp(-1*alpha*N_r))/N_r- gamma_r * I_r #Infected rats
+    dR_r <- g_r*gamma_r * I_r #Recovered rats
+    dD_r <- (1-g_r)*gamma_r * I_r #Dead rats
+    
+    #Fleas
+    dH  <- r_f*H*(1-H/K_f) #Fleas/rat
+    dFl <- (1-g_r)*gamma_r*I_r*H - d_f*Fl #Fleas in environment
+    
+    #Humans
+    N_h<- S_h + E_b + E_p + I_b + I_p + R_h #Total number of humans
+    dS_h<- -beta_b * S_h * Fl *(exp(-1*alpha*N_r))/N_h - beta_p * S_h * I_p/N_h #susceptible humans
+    dE_b<- beta_b * S_h * Fl *(exp(-1*alpha*N_r))/N_h - sigma_b*E_b #exposed humans (bubonic)
+    dE_p<- beta_p * S_h * I_p/N_h - sigma_p*E_p #exposed humans (pneumonic)
+    dI_b<- sigma_b*E_b - gamma_b*I_b #infected humans (bubonic)
+    dI_p<- sigma_p*E_p + p*gamma_b*I_b - gamma_p*I_p #infected humans (pneumonic)
+    dR_h<- g_h*gamma_b * I_b #recovered humans (just bubonic)
+    dD_h<- (1-p-g_h)*gamma_b * I_b + gamma_p*I_p  #dead humans (bubonic + pneumonic)
+    
+    return(list(c(dS_r, dI_r, dR_r, dD_r, dH, dFl, dS_h, dE_b, dE_p, dI_b, dI_p, dR_h, dD_h)))
+  })
+}
+
+#Define initial conditions and parameter values
+init <- c(S_r=500000, I_r=1, R_r=0, D_r=0, H=5, Fl=0, S_h = 500000, E_b=0, E_p=0, I_b = 0, I_p =0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(beta_r = 1, alpha=3/50000, gamma_r = 1/5.2, g_r=0.1, r_f=0.0084, K_f=5, d_f=1/5, beta_b=1, beta_p = 0.5, sigma_b= 1/6, sigma_p=1/4.3, gamma_b=0.1, gamma_p=1/2.5, p=0.8, g_h=0.2) #you can play with transmission and recovery rates here
+time <- seq(0, 200, by = .1) #how long to integrate over [time interval]?
+
+#Run ordinary differential equation solver
+out <- as.data.frame(ode(y = init, times = time, func = bubonic_pneumonicSEIR, parms = parameters))
+out$time<-NULL
+
+#Plot the output
+matplot(time, out[,1:4], type = "l", main= "Rats", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:4)
+legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:4)
+
+matplot(time, out[,5:6], type = "l", main= "Fleas", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:2)
+legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
+
+matplot(time, out[,7:13], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:7)
+legend("right", c("Susceptible", "Exposed Bubonic", "Exposed Pneumonic",  "Infected Bubonic", "Infected Pneumonic", "Recovered", "Dead"), pch = 1, col = 1:7)
+
+#summarize
+humans<-data.frame(S=out$S_h, E=out$E_b + out$E_b, I=out$I_b + out$I_p, R=out$R_h, D=out$D_h)
+matplot(time, humans[,1:5], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:5)
+legend("right", c("Susceptible", "Exposed",  "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
+
+
 
