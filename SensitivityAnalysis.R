@@ -138,3 +138,81 @@ pneumonicSIR <- function(time, state, parameters) {
   })
 }
          
+
+
+# Try manually with `lhs` package -----------------------------------------
+# https://daphnia.ecology.uga.edu/drakelab/wp-content/uploads/2015/07/sensitivity-ebola.pdf
+#install.packages('lhs')
+require(lhs) #add the lhs library
+h <- 1000 #choose number of parameter sets to sample to sample
+set.seed(6242015)
+lhs<-maximinLHS(h,5)
+
+#expected parameter values
+parameters <- c(beta_p = 0.0734, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+
+
+beta_p.min <- 0.001
+beta_p.max <- 1
+sigma_p.min <- 1/6
+sigma_p.max <- 1/2
+gamma_p.min <- 1/3
+gamma_p.max <- 1/4
+b_h.min <- 1/(30*365)
+b_h.max <- 1/(20*365)
+d_h.min <- 1/(30*365)
+d_h.max <- 1/(20*365)
+
+params.set <- cbind( beta_p = lhs[,1]*(beta_p.max-beta_p.min)+beta_p.min,
+                     sigma_p = lhs[,2]*(sigma_p.max-sigma_p.min)+sigma_p.min,
+                     gamma_p = lhs[,3]*(gamma_p.max-gamma_p.min)+gamma_p.min,
+                     b_h = lhs[,4]*(b_h.max-b_h.min)+b_h.min,
+                     d_h = lhs[,5]*(d_h.max-d_h.min)+d_h.min)
+
+
+h2 <-250
+
+init <- c(S_h = 500000, E_h= 0, I_h = 1, D_h=0)
+times <- seq(0, 500, by= .1)
+
+data <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
+for(i in 1:h2){
+       data[i,1:5] <- params <- as.list(c(params.set[i,]))
+       out <- as.data.frame(ode(init, times, pneumonicSIR, params))
+       data[i,6] <- max(out$D_h)
+       data[i,7] <- which.max(out$D_h)
+}
+names(data) <- c(names(params),'outbreak.size', 'outbreak.duration')
+par(mfrow=c(2,5))
+boxplot(data$outbreak.size~data$beta_p)
+boxplot(data$outbreak.duration~data$beta_p)
+boxplot(data$outbreak.size~data$sigma_p)
+boxplot(data$outbreak.duration~data$sigma_p)
+boxplot(data$outbreak.size~data$gamma_p)
+boxplot(data$outbreak.duration~data$gamma_p)
+boxplot(data$outbreak.size~data$b_h)
+boxplot(data$outbreak.duration~data$b_h)
+boxplot(data$outbreak.size~data$d_h)
+boxplot(data$outbreak.duration~data$d_h)
+
+par(mfrow=c(1,2))
+boxplot(data$outbreak.size)
+boxplot(data$outbreak.duration)
+
+#save(data, file='data.Rdata')
+
+library(sensitivity)
+bonferroni.alpha <- 0.05/5
+prcc_size <- pcc(data[,1:5], data[,6], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_duration <- pcc(data[,1:5], data[,7], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+
+#plot correlation coefficients and confidence intervals
+duration<-prcc_duration$PRCC
+duration$param<-rownames(duration)
+colnames(duration)[4:5] <- c("maxCI", "minCI")
+
+require(ggplot2)
+ggplot(duration, aes(x=param, y = original)) +
+  geom_point(size = 4)+ 
+  geom_errorbar(aes(ymax = maxCI, ymin = minCI))
+
