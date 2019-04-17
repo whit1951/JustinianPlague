@@ -196,8 +196,8 @@ boxplot(data$outbreak.size~data$d_h)
 boxplot(data$outbreak.duration~data$d_h)
 
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size)
-boxplot(data$outbreak.duration)
+boxplot(data$outbreak.size, main= "Outbreak Size")
+boxplot(data$outbreak.duration, main= "Outbreak Duration")
 
 #save(data, file='data.Rdata')
 

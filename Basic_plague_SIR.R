@@ -79,13 +79,42 @@ matplot(time, out[,7:11], type = "l", main= "Humans", xlab = "Time (days)", ylab
 legend("right", c("Susceptible", "Exposed", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
 
 
-
-# Pneumonic plague --------------------------------------------------------
+# Pneumonic plague SIR ----------------------------------------------------
 
 #Set up system of ordinary differential equations
 pneumonicSIR <- function(time, state, parameters) {
   with(as.list(c(state, parameters)), {
-    N_h<- S_h + E_h+ I_h 
+    N_h <- S_h + I_h + D_h
+    dS_h <- b_h*S_h -beta_p * S_h * I_h/N_h -d_h*S_h
+    dI_h <- beta_p * S_h * I_h/N_h - gamma_p*I_h -d_h*I_h
+    dD_h <- gamma_p*I_h #Deaths due to disease related mortality
+    
+    return(list(c(dS_h, dI_h, dD_h)))
+  })
+}
+
+#Define initial conditions and parameter values
+init <- c(S_h = 500000, I_h = 1, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(beta_p = 0.5, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+time <- seq(0, 500, by= .1) #how long to integrate over [time interval]?
+
+#Run ordinary differential equation solver
+out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
+out$time<-NULL
+
+#Plot the output
+matplot(time, out, type = "l", xlab = "Time (days)", ylab = "Number of Individuals", main = "Pneumonic Plague in People", lwd = 1, lty = 1, bty = "l", 
+        col = 1:4)
+legend("topright", c("Susceptible", "Infected", "Dead from Plague"), pch = 1, col = 1:4)
+
+
+
+# Pneumonic plague SEIR --------------------------------------------------------
+
+#Set up system of ordinary differential equations
+pneumonicSEIR <- function(time, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    N_h<- S_h + E_h+ I_h + D_h
     dS_h <- b_h*S_h -beta_p * S_h * I_h/N_h -d_h*S_h
     dE_h<-  beta_p * S_h * I_h/N_h - sigma_p*E_h - d_h*E_h
     dI_h <- sigma_p*E_h - gamma_p*I_h -d_h*I_h
@@ -97,11 +126,11 @@ pneumonicSIR <- function(time, state, parameters) {
 
 #Define initial conditions and parameter values
 init <- c(S_h = 500000, E_h= 0, I_h = 1, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
-parameters <- c(beta_p = 0.0734, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
-time <- seq(0, 100, by= .01) #how long to integrate over [time interval]?
+parameters <- c(beta_p = 0.5, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+time <- seq(0, 500, by= .1) #how long to integrate over [time interval]?
 
 #Run ordinary differential equation solver
-out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
+out <- as.data.frame(ode(y = init, times = time, func = pneumonicSEIR, parms = parameters))
 out$time<-NULL
 
 #Plot the output
