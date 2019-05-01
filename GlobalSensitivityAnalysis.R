@@ -44,32 +44,37 @@ h2 <-250
 init <- c(S_h = 499999, I_h = 1, D_h=0)
 times <- seq(0, 1000, by= 1)
 
-data <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
+pSIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
 for(i in 1:h2){
-  data[i,1:4] <- params <- as.list(c(params.set[i,]))
+  pSIR[i,1:4] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, pneumonicSIR, params))
-  data[i,5] <- max(out$D_h)
-  data[i,6] <- which.max(out$D_h)
+  pSIR[i,5] <- max(out$D_h)
+  pSIR[i,6] <- which.max(out$D_h)
 }
-names(data) <- c(names(params),'outbreak.size', 'outbreak.duration')
+difference<-as.vector(NA)
+for(i in 2:length(out$D_h)){
+  difference[i-1]<-out$D_h[i]-out$D_h[i-1]
+}
+which(difference<0.0001)[1]
+names(pSIR) <- c(names(params),'outbreak.size', 'outbreak.duration')
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
-boxplot(data$outbreak.duration~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
-boxplot(data$outbreak.size~data$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
-boxplot(data$outbreak.size~data$b_h, main= expression(paste("Effect of ", b[h], " on Size")))
-boxplot(data$outbreak.duration~data$b_h, main= expression(paste("Effect of ", b[h], " on Duration")))
-boxplot(data$outbreak.size~data$d_h, main= expression(paste("Effect of ", d[h], " on Size")))
-boxplot(data$outbreak.duration~data$d_h, main= expression(paste("Effect of ", d[h], " on Duration")))
+boxplot(pSIR$outbreak.size~pSIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
+boxplot(pSIR$outbreak.duration~pSIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
+boxplot(pSIR$outbreak.size~pSIR$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
+boxplot(pSIR$outbreak.duration~pSIR$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
+boxplot(pSIR$outbreak.size~pSIR$b_h, main= expression(paste("Effect of ", b[h], " on Size")))
+boxplot(pSIR$outbreak.duration~pSIR$b_h, main= expression(paste("Effect of ", b[h], " on Duration")))
+boxplot(pSIR$outbreak.size~pSIR$d_h, main= expression(paste("Effect of ", d[h], " on Size")))
+boxplot(pSIR$outbreak.duration~pSIR$d_h, main= expression(paste("Effect of ", d[h], " on Duration")))
 
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
-boxplot(data$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
+boxplot(pSIR$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
+boxplot(pSIR$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
 
-#save(data, file='data.Rdata')
+#save(pSIR, file='pSIR.Rdata')
 bonferroni.alpha <- 0.05/5
-prcc_size <- pcc(data[,1:4], data[,5], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
-prcc_duration <- pcc(data[,1:4], data[,6], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_size <- pcc(pSIR[,1:4], pSIR[,5], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_duration <- pcc(pSIR[,1:4], pSIR[,6], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
 
 #plot correlation coefficients and confidence intervals for epidemic size and duration
 size<-prcc_size$PRCC
@@ -119,34 +124,33 @@ params.set <- cbind( beta_p = lhs[,1]*(beta_p.max-beta_p.min)+beta_p.min,
                      d_h = lhs[,5]*(d_h.max-d_h.min)+d_h.min)
 
 
-data <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
+pSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
 for(i in 1:h2){
-  data[i,1:5] <- params <- as.list(c(params.set[i,]))
+  pSEIR[i,1:5] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, pneumonicSEIR, params))
-  data[i,6] <- max(out$D_h)
-  data[i,7] <- which.max(out$D_h)
+  pSEIR[i,6] <- max(out$D_h)
+  pSEIR[i,7] <- which.max(out$D_h)
 }
-names(data) <- c(names(params),'outbreak.size', 'outbreak.duration')
+names(pSEIR) <- c(names(params),'outbreak.size', 'outbreak.duration')
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
-boxplot(data$outbreak.duration~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
-boxplot(data$outbreak.size~data$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Size")))
-boxplot(data$outbreak.duration~data$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Duration")))
-boxplot(data$outbreak.size~data$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
-boxplot(data$outbreak.size~data$b_h, main= expression(paste("Effect of ", b[h], " on Size")))
-boxplot(data$outbreak.duration~data$b_h, main= expression(paste("Effect of ", b[h], " on Duration")))
-boxplot(data$outbreak.size~data$d_h, main= expression(paste("Effect of ", d[h], " on Size")))
-boxplot(data$outbreak.duration~data$d_h, main= expression(paste("Effect of ", d[h], " on Duration")))
+boxplot(pSEIR$outbreak.size~pSEIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
+boxplot(pSEIR$outbreak.duration~pSEIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
+boxplot(pSEIR$outbreak.size~pSEIR$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Size")))
+boxplot(pSEIR$outbreak.duration~pSEIR$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Duration")))
+boxplot(pSEIR$outbreak.size~pSEIR$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
+boxplot(pSEIR$outbreak.duration~pSEIR$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
+boxplot(pSEIR$outbreak.size~pSEIR$b_h, main= expression(paste("Effect of ", b[h], " on Size")))
+boxplot(pSEIR$outbreak.duration~pSEIR$b_h, main= expression(paste("Effect of ", b[h], " on Duration")))
+boxplot(pSEIR$outbreak.size~pSEIR$d_h, main= expression(paste("Effect of ", d[h], " on Size")))
+boxplot(pSEIR$outbreak.duration~pSEIR$d_h, main= expression(paste("Effect of ", d[h], " on Duration")))
 
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
-boxplot(data$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
+boxplot(pSEIR$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
+boxplot(pSEIR$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
 
-#save(data, file='data.Rdata')
 bonferroni.alpha <- 0.05/5
-prcc_size <- pcc(data[,1:5], data[,6], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
-prcc_duration <- pcc(data[,1:5], data[,7], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_size <- pcc(pSEIR[,1:5], pSEIR[,6], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_duration <- pcc(pSEIR[,1:5], pSEIR[,7], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
 
 #plot correlation coefficients and confidence intervals for epidemic size and duration
 size<-prcc_size$PRCC
@@ -223,46 +227,45 @@ params.set <- cbind( beta_r = lhs[,1]*(beta_r.max-beta_r.min)+beta_r.min,
                      g_h = lhs[,11]*(g_h.max-g_h.min)+g_h.min)
 
 
-data <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
+bSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
 for(i in 1:h2){
-  data[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
+  bSEIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, ratfleaSIR, params))
-  data[i,length(parameters)+1] <- max(out$D_h)
-  data[i,length(parameters)+2] <- which.max(out$D_h)
+  bSEIR[i,length(parameters)+1] <- max(out$D_h)
+  bSEIR[i,length(parameters)+2] <- which.max(out$D_h)
 }
-names(data) <- c(names(params),'outbreak.size', 'outbreak.duration')
+names(bSEIR) <- c(names(params),'outbreak.size', 'outbreak.duration')
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size~data$beta_r, main= expression(paste("Effect of ", beta[r], " on Size")))
-boxplot(data$outbreak.duration~data$beta_r, main= expression(paste("Effect of ", beta[r], " on Duration")))
-boxplot(data$outbreak.size~data$alpha, main= expression(paste("Effect of ", alpha, " on Size")))
-boxplot(data$outbreak.duration~data$alpha, main= expression(paste("Effect of ", alpha, " on Duration")))
-boxplot(data$outbreak.size~data$gamma_r,  main= expression(paste("Effect of ", gamma[r], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_r, main= expression(paste("Effect of ", gamma[r], " on Duration")))
-boxplot(data$outbreak.size~data$g_r, main= expression(paste("Effect of ", g[r], " on Size")))
-boxplot(data$outbreak.duration~data$g_r, main= expression(paste("Effect of ", g[r], " on Duration")))
-boxplot(data$outbreak.size~data$r_f, main= expression(paste("Effect of ", r[f], " on Size")))
-boxplot(data$outbreak.duration~data$r_f, main= expression(paste("Effect of ", r[f], " on Duration")))
-boxplot(data$outbreak.size~data$K_f, main= expression(paste("Effect of ", K[f], " on Size")))
-boxplot(data$outbreak.duration~data$K_f, main= expression(paste("Effect of ", K[f], " on Duration")))
-boxplot(data$outbreak.size~data$d_f, main= expression(paste("Effect of ", d[f], " on Size")))
-boxplot(data$outbreak.duration~data$d_f, main= expression(paste("Effect of ", d[f], " on Duration")))
-boxplot(data$outbreak.size~data$beta_h, main= expression(paste("Effect of ", beta[h], " on Size")))
-boxplot(data$outbreak.duration~data$beta_h, main= expression(paste("Effect of ", beta[h], " on Duration")))
-boxplot(data$outbreak.size~data$sigma_h, main= expression(paste("Effect of ", sigma[h], " on Size")))
-boxplot(data$outbreak.duration~data$sigma_h, main= expression(paste("Effect of ", sigma[h], " on Duration")))
-boxplot(data$outbreak.size~data$gamma_h, main= expression(paste("Effect of ", gamma[h], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_h, main= expression(paste("Effect of ", gamma[h], " on Duration")))
-boxplot(data$outbreak.size~data$g_h, main= expression(paste("Effect of ", g[h], " on Size")))
-boxplot(data$outbreak.duration~data$g_h, main= expression(paste("Effect of ", g[h], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$beta_r, main= expression(paste("Effect of ", beta[r], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$beta_r, main= expression(paste("Effect of ", beta[r], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$alpha, main= expression(paste("Effect of ", alpha, " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$alpha, main= expression(paste("Effect of ", alpha, " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$gamma_r,  main= expression(paste("Effect of ", gamma[r], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$gamma_r, main= expression(paste("Effect of ", gamma[r], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$g_r, main= expression(paste("Effect of ", g[r], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$g_r, main= expression(paste("Effect of ", g[r], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$r_f, main= expression(paste("Effect of ", r[f], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$r_f, main= expression(paste("Effect of ", r[f], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$K_f, main= expression(paste("Effect of ", K[f], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$K_f, main= expression(paste("Effect of ", K[f], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$d_f, main= expression(paste("Effect of ", d[f], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$d_f, main= expression(paste("Effect of ", d[f], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$beta_h, main= expression(paste("Effect of ", beta[h], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$beta_h, main= expression(paste("Effect of ", beta[h], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$sigma_h, main= expression(paste("Effect of ", sigma[h], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$sigma_h, main= expression(paste("Effect of ", sigma[h], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$gamma_h, main= expression(paste("Effect of ", gamma[h], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$gamma_h, main= expression(paste("Effect of ", gamma[h], " on Duration")))
+boxplot(bSEIR$outbreak.size~bSEIR$g_h, main= expression(paste("Effect of ", g[h], " on Size")))
+boxplot(bSEIR$outbreak.duration~bSEIR$g_h, main= expression(paste("Effect of ", g[h], " on Duration")))
 
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
-boxplot(data$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
+boxplot(bSEIR$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
+boxplot(bSEIR$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
 
-#save(data, file='data.Rdata')
 bonferroni.alpha <- 0.05/5
-prcc_size <- pcc(data[,1:length(parameters)], data[,length(parameters)+1], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
-prcc_duration <- pcc(data[,1:length(parameters)], data[,length(parameters)+2], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_size <- pcc(bSEIR[,1:length(parameters)], bSEIR[,length(parameters)+1], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_duration <- pcc(bSEIR[,1:length(parameters)], bSEIR[,length(parameters)+2], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
 
 #plot correlation coefficients and confidence intervals for epidemic size and duration
 size<-prcc_size$PRCC
@@ -351,54 +354,53 @@ params.set <- cbind( beta_r = lhs[,1]*(beta_r.max-beta_r.min)+beta_r.min,
                      p = lhs[,15]*(p.max-p.min)+p.min)
 
 
-data <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
+bpSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+2))
 for(i in 1:h2){
-  data[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
+  bpSEIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, bubonic_pneumonicSEIR, params))
-  data[i,length(parameters)+1] <- max(out$D_h)
-  data[i,length(parameters)+2] <- which.max(out$D_h)
+  bpSEIR[i,length(parameters)+1] <- max(out$D_h)
+  bpSEIR[i,length(parameters)+2] <- which.max(out$D_h)
 }
-names(data) <- c(names(params),'outbreak.size', 'outbreak.duration')
+names(bpSEIR) <- c(names(params),'outbreak.size', 'outbreak.duration')
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size~data$beta_r, main= expression(paste("Effect of ", beta[r], " on Size")))
-boxplot(data$outbreak.duration~data$beta_r, main= expression(paste("Effect of ", beta[r], " on Duration")))
-boxplot(data$outbreak.size~data$alpha, main= expression(paste("Effect of ", alpha, " on Size")))
-boxplot(data$outbreak.duration~data$alpha, main= expression(paste("Effect of ", alpha, " on Duration")))
-boxplot(data$outbreak.size~data$gamma_r,  main= expression(paste("Effect of ", gamma[r], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_r, main= expression(paste("Effect of ", gamma[r], " on Duration")))
-boxplot(data$outbreak.size~data$g_r, main= expression(paste("Effect of ", g[r], " on Size")))
-boxplot(data$outbreak.duration~data$g_r, main= expression(paste("Effect of ", g[r], " on Duration")))
-boxplot(data$outbreak.size~data$r_f, main= expression(paste("Effect of ", r[f], " on Size")))
-boxplot(data$outbreak.duration~data$r_f, main= expression(paste("Effect of ", r[f], " on Duration")))
-boxplot(data$outbreak.size~data$K_f, main= expression(paste("Effect of ", K[f], " on Size")))
-boxplot(data$outbreak.duration~data$K_f, main= expression(paste("Effect of ", K[f], " on Duration")))
-boxplot(data$outbreak.size~data$d_f, main= expression(paste("Effect of ", d[f], " on Size")))
-boxplot(data$outbreak.duration~data$d_f, main= expression(paste("Effect of ", d[f], " on Duration")))
-boxplot(data$outbreak.size~data$beta_b, main= expression(paste("Effect of ", beta[b], " on Size")))
-boxplot(data$outbreak.duration~data$beta_b, main= expression(paste("Effect of ", beta[b], " on Duration")))
-boxplot(data$outbreak.size~data$sigma_b, main= expression(paste("Effect of ", sigma[b], " on Size")))
-boxplot(data$outbreak.duration~data$sigma_b, main= expression(paste("Effect of ", sigma[b], " on Duration")))
-boxplot(data$outbreak.size~data$gamma_b, main= expression(paste("Effect of ", gamma[b], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_b, main= expression(paste("Effect of ", gamma[b], " on Duration")))
-boxplot(data$outbreak.size~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
-boxplot(data$outbreak.duration~data$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
-boxplot(data$outbreak.size~data$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Size")))
-boxplot(data$outbreak.duration~data$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Duration")))
-boxplot(data$outbreak.size~data$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
-boxplot(data$outbreak.duration~data$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
-boxplot(data$outbreak.size~data$g_h, main= expression(paste("Effect of ", g[h], " on Size")))
-boxplot(data$outbreak.duration~data$g_h, main= expression(paste("Effect of ", g[h], " on Duration")))
-boxplot(data$outbreak.size~data$p, main= expression(paste("Effect of ", p, " on Size")))
-boxplot(data$outbreak.duration~data$p, main= expression(paste("Effect of ", p, " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$beta_r, main= expression(paste("Effect of ", beta[r], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$beta_r, main= expression(paste("Effect of ", beta[r], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$alpha, main= expression(paste("Effect of ", alpha, " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$alpha, main= expression(paste("Effect of ", alpha, " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$gamma_r,  main= expression(paste("Effect of ", gamma[r], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$gamma_r, main= expression(paste("Effect of ", gamma[r], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$g_r, main= expression(paste("Effect of ", g[r], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$g_r, main= expression(paste("Effect of ", g[r], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$r_f, main= expression(paste("Effect of ", r[f], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$r_f, main= expression(paste("Effect of ", r[f], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$K_f, main= expression(paste("Effect of ", K[f], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$K_f, main= expression(paste("Effect of ", K[f], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$d_f, main= expression(paste("Effect of ", d[f], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$d_f, main= expression(paste("Effect of ", d[f], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$beta_b, main= expression(paste("Effect of ", beta[b], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$beta_b, main= expression(paste("Effect of ", beta[b], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$sigma_b, main= expression(paste("Effect of ", sigma[b], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$sigma_b, main= expression(paste("Effect of ", sigma[b], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$gamma_b, main= expression(paste("Effect of ", gamma[b], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$gamma_b, main= expression(paste("Effect of ", gamma[b], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$sigma_p, main= expression(paste("Effect of ", sigma[p], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$gamma_p,  main= expression(paste("Effect of ", gamma[p], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$gamma_p, main= expression(paste("Effect of ", gamma[p], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$g_h, main= expression(paste("Effect of ", g[h], " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$g_h, main= expression(paste("Effect of ", g[h], " on Duration")))
+boxplot(bpSEIR$outbreak.size~bpSEIR$p, main= expression(paste("Effect of ", p, " on Size")))
+boxplot(bpSEIR$outbreak.duration~bpSEIR$p, main= expression(paste("Effect of ", p, " on Duration")))
 
 par(mfrow=c(1,2))
-boxplot(data$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
-boxplot(data$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
+boxplot(bpSEIR$outbreak.size, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
+boxplot(bpSEIR$outbreak.duration, main= "Outbreak Duration", ylab="Time (Days)")
 
-#save(data, file='data.Rdata')
 bonferroni.alpha <- 0.05/5
-prcc_size <- pcc(data[,1:length(parameters)], data[,length(parameters)+1], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
-prcc_duration <- pcc(data[,1:length(parameters)], data[,length(parameters)+2], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_size <- pcc(bpSEIR[,1:length(parameters)], bpSEIR[,length(parameters)+1], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
+prcc_duration <- pcc(bpSEIR[,1:length(parameters)], bpSEIR[,length(parameters)+2], nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
 
 #plot correlation coefficients and confidence intervals for epidemic size and duration
 size<-prcc_size$PRCC
@@ -419,3 +421,20 @@ ggplot(duration, aes(x=param, y = original)) +
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
   ggtitle("PRCC Outbreak Duration: Bubonic/Pneumonic Plague SEIR")
 
+
+# Comparative Figure for All Models ---------------------------------------
+
+comp_size<-data.frame(pSIR=pSIR$outbreak.size, pSEIR= pSEIR$outbreak.size , bSEIR= bSEIR$outbreak.size, bpSEIR= bpSEIR$outbreak.size)
+comp_dur<- data.frame(pSIR=pSIR$outbreak.duration, pSEIR= pSEIR$outbreak.duration , bSEIR= bSEIR$outbreak.duration, bpSEIR= bpSEIR$outbreak.duration)
+
+long_DFsize <- comp_size %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSEIR, bpSEIR))
+
+long_DFdur <- comp_dur %>% gather(Model, Duration, c(pSIR, pSEIR, bSEIR, bpSEIR))
+
+ggplot(long_DFsize, aes(Model, NumberDead)) + geom_jitter() +
+  ylab("Number Dead")
+  #scale_x_discrete(labels = c("Bubonic/Pneumonic (SEIR)", "Bubonic Plague (SIR)", "Pneumonic Plague (SEIR)", "Pneumonic Plague (SIR)")
+
+ggplot(long_DFdur, aes(Model, Duration)) + geom_jitter() +
+  ylab("Time (Days)")+
+  scale_x_discrete(labels = c("bpSEIR"= "Bubonic/Pneumonic (SEIR)", "bSEIR"= "Bubonic Plague (SEIR)", "pSEIR"="Pneumonic Plague (SEIR)", "pSIR"="Pneumonic Plague (SIR)"))
