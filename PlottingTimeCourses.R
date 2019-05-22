@@ -32,7 +32,7 @@ legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
 
 matplot(time, bubonicSIR_out[,7:10], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
         col = 1:5)
-legend("right", c("Susceptible", "Exposed", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
+legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
 
 
 # Plotting Bubonic SEIR: Flea/Rat/Human Model----------------------------------------------------------------
@@ -56,6 +56,56 @@ matplot(time, bubonicSEIR_out[,5:6], type = "l", main= "Fleas", xlab = "Time (da
 legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
 
 matplot(time, bubonicSEIR_out[,7:11], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:5)
+legend("right", c("Susceptible", "Exposed", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
+
+
+# Plotting Bubonic SIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=499999, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = 500000, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(r_r=0.014, K_r=499999, p_r=0.975, d_r=0.00055, beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+time <- seq(0, 1000, by = 1) #how long to integrate over [time interval]?
+
+#Run ordinary differential equation solver
+bSIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIRratK, parms = parameters))
+bSIRrK_out$time<-NULL
+
+#Plot the output
+matplot(time, bSIRrK_out[,1:4], type = "l", main= "Rats", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:4)
+legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:4)
+
+matplot(time, bSIRrK_out[,5:6], type = "l", main= "Fleas", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:2)
+legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
+
+matplot(time, bSIRrK_out[,7:10], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:5)
+legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
+
+
+# Plotting Bubonic SEIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=12499, I_r=1, R_r=487500, D_r=0, H=6, Fl=0, S_h = 500000, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(r_r=0.014, K_r=499999, p_r=0.975, d_r=0.00055, beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
+time <- seq(0, 1000, by = 1) #how long to integrate over [time interval]?
+
+#Run ordinary differential equation solver
+bSEIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIRratsK, parms = parameters))
+bSEIRrK_out$time<-NULL
+
+#Plot the output
+matplot(time, bSEIRrK_out[,1:4], type = "l", main= "Rats", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:4)
+legend("right", c("Susceptible", "Infected", "Recovered", "Dead"), pch = 1, col = 1:4)
+
+matplot(time, bSEIRrK_out[,5:6], type = "l", main= "Fleas", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
+        col = 1:2)
+legend("right", c("Fleas/rat", "Free fleas"), pch = 1, col = 1:2)
+
+matplot(time, bSEIRrK_out[,7:11], type = "l", main= "Humans", xlab = "Time (days)", ylab = "Number of Individuals", lwd = 1, lty = 1, bty = "l", 
         col = 1:5)
 legend("right", c("Susceptible", "Exposed", "Infected", "Recovered", "Dead"), pch = 1, col = 1:5)
 
@@ -148,10 +198,10 @@ legend("right", colnames(lice_out)[3:7], pch=1, col=1:5)
 
 
 # Compare time series of model types --------------------------------------
-comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bpSEIR=bp_out$D_h, lice=lice_out$D_h)
+comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bSIRrK=bSIRrK_out$D_h, bSEIRrK=bSEIRrK_out$D_h, bpSEIR=bp_out$D_h, lice=lice_out$D_h)
 # write.csv(comp, "NumberDead.csv")
-long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, lice))
+long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, lice, bSIRrK, bSEIRrk))
 ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
   xlab("Time (Days)") + ylab("Number Dead")+
-  scale_color_discrete(labels = c(lice="Human Ectoparasites", bpSEIR="Bubonic/Pneumonic (SEIR)", bSIR="Bubonic Plague (SIR)", bSEIR="Bubonic Plague (SEIR)", pSEIR="Pneumonic Plague (SEIR)", pSIR="Pneumonic Plague (SIR)"))
+  scale_color_discrete(labels = c(lice="Human Ectoparasites", bpSEIR="Bubonic/Pneumonic (SEIR)", bSIR="Bubonic Plague (SIR)", bSEIR="Bubonic Plague (SEIR)", pSEIR="Pneumonic Plague (SEIR)", pSIR="Pneumonic Plague (SIR)", bSIRrK="Bubonic SIR (K & Rest.)", bSEIRrK="Bubonic SEIR (K & Rest.)"))
 
