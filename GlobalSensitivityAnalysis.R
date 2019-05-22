@@ -6,6 +6,9 @@
 #' Adapted from: https://daphnia.ecology.uga.edu/drakelab/wp-content/uploads/2015/07/sensitivity-ebola.pdf
 #' load ode functions for each of the models
 source('~/JustinianPlague/Plague_model_functions.R')
+#' load uniform and non uniform LHS distributions
+source('~/JustinianPlague/LHSnonuniform.R')
+
 
 #install.packages('lhs')
 require(lhs) #add the lhs library
@@ -13,40 +16,24 @@ library(sensitivity)
 require(ggplot2)
 library(tidyverse)
 
-h <- 1000 #choose number of parameter sets to sample to sample
 set.seed(2718) #set random seed
+times <- seq(0, 5000, by= 1) #time sequence to integrate over for all models
+h <- 100 #choose number of parameter sets/subdivisions to sample to sample
+uniform=FALSE #unfiform or non-uniform distributions
 
-
-
-# Sensitivity Analysis for Pneumonic SIR Model ----------------------------
+#### Sensitivity Analysis for Pneumonic SIR Model ####----------------------------
 
 #expected parameter values
 parameters <- c(beta_p = 0.45, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
-lhs<-maximinLHS(h, length(parameters)) #here 4 is the number of parameters required for the ODE system
 
-beta_p.min <- 0.42
-beta_p.max <- 0.48
-gamma_p.min <- 1/3.7
-gamma_p.max <- 1/1.3
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
-
-params.set <- cbind( beta_p = lhs[,1]*(beta_p.max-beta_p.min)+beta_p.min,
-                     gamma_p = lhs[,2]*(gamma_p.max-gamma_p.min)+gamma_p.min,
-                     b_h = lhs[,3]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,4]*(d_h.max-d_h.min)+d_h.min)
-
-
-h2 <-250
+if(uniform==TRUE){ params.set<-LHS_pSIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_pSIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
 init <- c(S_h = 499999, I_h = 1, D_h=0)
-times <- seq(0, 2000, by= 1)
-
-pSIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+pSIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(pSIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
-for(i in 1:h2){
+
+for(i in 1:h){
   pSIR[i,1:4] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, pneumonicSIR, params))
   pSIR[i,5] <- max(out$D_h)
@@ -61,7 +48,7 @@ for(i in 1:h2){
   pSIR[i,9]<-ifelse(length(which(difference>0.01)[length(which(difference>0.01))])>0, which(difference>0.01)[length(which(difference>0.01))], 0) 
 }
 
-#names(pSIR) <- c(names(params),'MaxInf', 'Thresh1')
+#plot boxplots
 par(mfrow=c(1,2))
 boxplot(pSIR$MaxInf~pSIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Size")))
 boxplot(pSIR$Thresh1~pSIR$beta_p, main= expression(paste("Effect of ", beta[p], " on Duration")))
@@ -76,7 +63,6 @@ par(mfrow=c(1,2))
 boxplot(pSIR$MaxInf, main= "Outbreak Size", ylab= "Number of Dead Humans", ylim=c(0,500000))
 boxplot(pSIR$Thresh1, main= "Outbreak Duration", ylab="Time (Days)")
 
-#save(pSIR, file='pSIR.Rdata')
 bonferroni.alpha <- 0.05/5
 prcc_size <- pcc(pSIR[,1:4], pSIR$MaxInf, nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
 prcc_duration <- pcc(pSIR[,1:4], pSIR$Thresh1, nboot = 1000, rank=TRUE, conf=1-bonferroni.alpha)
@@ -91,7 +77,6 @@ ggplot(size, aes(x=param, y = original)) +
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
   ggtitle("PRCC Outbreak Size: Pneumonic SIR")
 
-
 duration<-prcc_duration$PRCC
 duration$param<-rownames(duration)
 colnames(duration)[4:5] <- c("maxCI", "minCI")
@@ -101,38 +86,20 @@ ggplot(duration, aes(x=param, y = original)) +
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
   ggtitle("PRCC Outbreak Duration: Pneumonic SIR")
 
-# Sensitivity Analysis for Pneumonic SEIR Model ----------------------------
 
+#### Sensitivity Analysis for Pneumonic SEIR Model #### ----------------------------
 
 #expected parameter values
 init <- c(S_h = 499999, E_h= 0, I_h = 1, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
 parameters <- c(beta_p = 0.45, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
-times <- seq(0, 5000, by= 1)
-lhs<-maximinLHS(h,length(parameters)) #here 5 is the number of parameters required for the ODE system
-h2 <-250
 
-beta_p.min <- 0.42
-beta_p.max <- 0.48
-sigma_p.min <- 1/6.1
-sigma_p.max <- 1/2.5
-gamma_p.min <- 1/3.7
-gamma_p.max <- 1/1.3
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
+if(uniform==TRUE){ params.set<-LHS_pSEIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_pSEIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
-params.set <- cbind( beta_p = lhs[,1]*(beta_p.max-beta_p.min)+beta_p.min,
-                     sigma_p = lhs[,2]*(sigma_p.max-sigma_p.min)+sigma_p.min,
-                     gamma_p = lhs[,3]*(gamma_p.max-gamma_p.min)+gamma_p.min,
-                     b_h = lhs[,4]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,5]*(d_h.max-d_h.min)+d_h.min)
-
-
-pSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+pSEIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(pSEIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
 
-for(i in 1:h2){
+for(i in 1:h){
   pSEIR[i,1:5] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, pneumonicSEIR, params))
   pSEIR[i,6] <- max(out$D_h)
@@ -192,62 +159,13 @@ ggplot(duration, aes(x=param, y = original)) +
 init <- c(S_r=499999, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = 500000, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
-lhs<-maximinLHS(h, length(parameters)) 
+if(uniform==TRUE){ params.set<-LHS_bSIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_bSIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
-times <- seq(0, 1000, by= 1)
-h2 <-250
-
-beta_r.min <- 0.04
-beta_r.max <- 0.14
-alpha.min <- 0.39/500000
-alpha.max <- 20/500000
-gamma_r.min <- 1/4.71
-gamma_r.max <- 1/5.59
-g_r.min <- 0
-g_r.max <- 0.37
-r_f.min <- 0.0084
-r_f.max <- 0.055
-K_f.min <-3.29
-K_f.max <-11.17
-d_f.min <- 1/11.66
-d_f.max <- 1/1
-beta_h.min <- 0.18
-beta_h.max <- 0.20
-gamma_h.min <- 1/26
-gamma_h.max <- 1/10
-g_h.min <- 0.3
-g_h.max <- 0.4
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
-
-
-# create_parameters<-function(lhs_matrix, parameters){
-#   min_max<-data.frame(min_val=paste0(names(parameters),".min"), max_val=paste0(names(parameters), ".max"))
-#   for(i in 1:length(parameters)){
-#     param_matrix[i]<-lhs_matrix[i]*(max_val[i]-min_val[i])+min_val[i]
-#   }
-# }
-
-params.set <- cbind( beta_r = lhs[,1]*(beta_r.max-beta_r.min)+beta_r.min,
-                     alpha = lhs[,2]*(alpha.max-alpha.min)+alpha.min,
-                     gamma_r = lhs[,3]*(gamma_r.max-gamma_r.min)+gamma_r.min,
-                     g_r = lhs[,4]*(g_r.max-g_r.min)+g_r.min,
-                     r_f = lhs[,5]*(r_f.max-r_f.min)+r_f.min,
-                     K_f = lhs[,6]*(K_f.max-K_f.min)+K_f.min,
-                     d_f = lhs[,7]*(d_f.max-d_f.min)+d_f.min,
-                     beta_h= lhs[,8]*(beta_h.max-beta_h.min)+beta_h.min,
-                     gamma_h = lhs[,9]*(gamma_h.max-gamma_h.min)+gamma_h.min,
-                     g_h = lhs[,10]*(g_h.max-g_h.min)+g_h.min,
-                     b_h = lhs[,11]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,12]*(d_h.max-d_h.min)+d_h.min)
-
-
-bSIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+bSIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(bSIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
 
-for(i in 1:h2){
+for(i in 1:h){
   bSIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, bubonicSIR, params))
   bSIR[i,length(parameters)+1] <- max(out$D_h)
@@ -324,65 +242,13 @@ ggplot(duration, aes(x=param, y = original)) +
 init <- c(S_r=499999, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = 500000, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
-lhs<-maximinLHS(h, length(parameters)) #here 5 is the number of parameters required for the ODE system
+if(uniform==TRUE){ params.set<-LHS_bSEIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_bSEIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
-times <- seq(0, 1000, by= 1)
-h2 <-250
-
-beta_r.min <- 0.04
-beta_r.max <- 0.14
-alpha.min <- 0.39/500000
-alpha.max <- 20/500000
-gamma_r.min <- 1/4.71
-gamma_r.max <- 1/5.59
-g_r.min <- 0
-g_r.max <- 0.37
-r_f.min <- 0.0084
-r_f.max <- 0.055
-K_f.min <-3.29
-K_f.max <-11.17
-d_f.min <- 1/11.66
-d_f.max <- 1/1
-beta_h.min <- 0.18
-beta_h.max <- 0.20
-sigma_h.min <- 1/6
-sigma_h.max <- 1/2
-gamma_h.min <- 1/26
-gamma_h.max <- 1/10
-g_h.min <- 0.3
-g_h.max <- 0.4
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
-
-
-# create_parameters<-function(lhs_matrix, parameters){
-#   min_max<-data.frame(min_val=paste0(names(parameters),".min"), max_val=paste0(names(parameters), ".max"))
-#   for(i in 1:length(parameters)){
-#     param_matrix[i]<-lhs_matrix[i]*(max_val[i]-min_val[i])+min_val[i]
-#   }
-# }
-
-params.set <- cbind( beta_r = lhs[,1]*(beta_r.max-beta_r.min)+beta_r.min,
-                     alpha = lhs[,2]*(alpha.max-alpha.min)+alpha.min,
-                     gamma_r = lhs[,3]*(gamma_r.max-gamma_r.min)+gamma_r.min,
-                     g_r = lhs[,4]*(g_r.max-g_r.min)+g_r.min,
-                     r_f = lhs[,5]*(r_f.max-r_f.min)+r_f.min,
-                     K_f = lhs[,6]*(K_f.max-K_f.min)+K_f.min,
-                     d_f = lhs[,7]*(d_f.max-d_f.min)+d_f.min,
-                     beta_h= lhs[,8]*(beta_h.max-beta_h.min)+beta_h.min,
-                     sigma_h = lhs[,9]*(sigma_h.max-sigma_h.min)+sigma_h.min,
-                     gamma_h = lhs[,10]*(gamma_h.max-gamma_h.min)+gamma_h.min,
-                     g_h = lhs[,11]*(g_h.max-g_h.min)+g_h.min,
-                     b_h = lhs[,12]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,13]*(d_h.max-d_h.min)+d_h.min)
-
-
-bSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+bSEIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(bSEIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
 
-for(i in 1:h2){
+for(i in 1:h){
   bSEIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, bubonicSEIR, params))
   bSEIR[i,length(parameters)+1] <- max(out$D_h)
@@ -460,76 +326,13 @@ ggplot(duration, aes(x=param, y = original)) +
 init <- c(S_r=499999, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = 500000, E_b=0, E_p=0, I_b = 0, I_p =0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_b=0.19, beta_p = 0.45, sigma_b= 1/6, sigma_p=1/4.3, gamma_b=1/10, gamma_p=1/2.5, p=0.2, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
-lhs<-maximinLHS(h, length(parameters)) 
+if(uniform==TRUE){ params.set<-LHS_bpSEIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_bpSEIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
-times <- seq(0, 1000, by= 1)
-h2 <-1000
-
-beta_r.min <- 0.04
-beta_r.max <- 0.14
-alpha.min <- 0.39/500000
-alpha.max <- 20/500000
-gamma_r.min <- 1/4.71
-gamma_r.max <- 1/5.59
-g_r.min <- 0
-g_r.max <- 0.37
-r_f.min <- 0.0084
-r_f.max <- 0.055
-K_f.min <-3.29
-K_f.max <-11.17
-d_f.min <- 1/11.66
-d_f.max <- 1/1
-beta_b.min <- 0.18
-beta_b.max <- 0.20
-sigma_b.min <- 1/6
-sigma_b.max <- 1/2
-gamma_b.min <- 1/26
-gamma_b.max <- 1/10
-beta_p.min <- 0.42
-beta_p.max <- 0.48
-sigma_p.min <- 1/6.1
-sigma_p.max <- 1/2.5
-gamma_p.min <- 1/3.7
-gamma_p.max <- 1/1.3
-p.min<- 0
-p.max<- 0.4
-g_h.min <- 0.3
-g_h.max <- 0.4
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
-
-# create_parameters<-function(lhs_matrix, parameters){
-#   min_max<-data.frame(min_val=paste0(names(parameters),".min"), max_val=paste0(names(parameters), ".max"))
-#   for(i in 1:length(parameters)){
-#     param_matrix[i]<-lhs_matrix[i]*(max_val[i]-min_val[i])+min_val[i]
-#   }
-# }
-
-params.set <- cbind( beta_r = lhs[,1]*(beta_r.max-beta_r.min)+beta_r.min,
-                     alpha = lhs[,2]*(alpha.max-alpha.min)+alpha.min,
-                     gamma_r = lhs[,3]*(gamma_r.max-gamma_r.min)+gamma_r.min,
-                     g_r = lhs[,4]*(g_r.max-g_r.min)+g_r.min,
-                     r_f = lhs[,5]*(r_f.max-r_f.min)+r_f.min,
-                     K_f = lhs[,6]*(K_f.max-K_f.min)+K_f.min,
-                     d_f = lhs[,7]*(d_f.max-d_f.min)+d_f.min,
-                     beta_b= lhs[,8]*(beta_b.max-beta_b.min)+beta_b.min,
-                     sigma_b = lhs[,9]*(sigma_b.max-sigma_b.min)+sigma_b.min,
-                     gamma_b = lhs[,10]*(gamma_b.max-gamma_b.min)+gamma_b.min,
-                     beta_p = lhs[,11]*(beta_p.max-beta_p.min)+beta_p.min,
-                     sigma_p = lhs[,12]*(sigma_p.max-sigma_p.min)+sigma_p.min,
-                     gamma_p = lhs[,13]*(gamma_p.max-gamma_p.min)+gamma_p.min,
-                     g_h = lhs[,14]*(g_h.max-g_h.min)+g_h.min,
-                     p = lhs[,15]*(p.max-p.min)+p.min,
-                     b_h = lhs[,16]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,17]*(d_h.max-d_h.min)+d_h.min)
-
-
-bpSEIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+bpSEIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(bpSEIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
 
-for(i in 1:h2){
+for(i in 1:h){
   bpSEIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, bubonic_pneumonicSEIR, params))
   bpSEIR[i,length(parameters)+1] <- max(out$D_h)
@@ -611,58 +414,15 @@ ggplot(duration, aes(x=param, y = original)) +
 #Define initial conditions and parameter values
 init <- c(S_l=15*499999, I_l=0, S_h = 499999, I_low=0, I_high=1, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
 parameters <- c(r_l = 0.11, K_l=15, beta_low=0.04, beta_high=0.3, beta_l=0.05, gamma_lice = 1/3, gamma_low=1/2, gamma_high=1/8, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
-lhs<-maximinLHS(h, length(parameters)) 
 
-times <- seq(0, 1000, by= 1)
-h2 <-1000
-
-r_l.min<-0.10
-r_l.max<-0.12
-K_l.min<-10.5
-K_l.max<-67.7
-beta_low.min<- 0
-beta_low.max<- 0.05
-beta_high.min<-0
-beta_high.max<-1
-beta_l.min<-0
-beta_l.max<-0.1
-gamma_lice.min<-2
-gamma_lice.max<-4
-gamma_low.min<-0
-gamma_low.max<-4
-gamma_high.min<-0
-gamma_high.max<-4
-g_h.min <- 0.3
-g_h.max <- 0.4
-b_h.min <- 1/(30*365)
-b_h.max <- 1/(20*365)
-d_h.min <- 1/(30*365)
-d_h.max <- 1/(20*365)
-
-# create_parameters<-function(lhs_matrix, parameters){
-#   min_max<-data.frame(min_val=paste0(names(parameters),".min"), max_val=paste0(names(parameters), ".max"))
-#   for(i in 1:length(parameters)){
-#     param_matrix[i]<-lhs_matrix[i]*(max_val[i]-min_val[i])+min_val[i]
-#   }
-# }
-
-params.set <- cbind( r_l = lhs[,1]*(r_l.max-r_l.min)+r_l.min,
-                     K_l = lhs[,2]*(K_l.max-K_l.min)+K_l.min,
-                     beta_low = lhs[,3]*(beta_low.max-beta_low.min)+beta_low.min,
-                     beta_high = lhs[,4]*(beta_high.max-beta_high.min)+beta_high.min,
-                     beta_l = lhs[,5]*(beta_l.max-beta_l.min)+beta_l.min,
-                     gamma_lice = lhs[,6]*(gamma_lice.max-gamma_lice.min)+gamma_lice.min,
-                     gamma_low = lhs[,7]*(gamma_low.max-gamma_low.min)+gamma_low.min,
-                     gamma_high= lhs[,8]*(gamma_high.max-gamma_high.min)+gamma_high.min,
-                     g_h = lhs[,9]*(g_h.max-g_h.min)+g_h.min,
-                     b_h = lhs[,10]*(b_h.max-b_h.min)+b_h.min,
-                     d_h = lhs[,11]*(d_h.max-d_h.min)+d_h.min)
+if(uniform==TRUE){ params.set<-LHS_eSIR.uniform  #uniform LHS distribution from `LHSnonuniform.R`
+} else{ params.set<-LHS_eSIR} #non-uniform LHS distribution from `LHSnonuniform.R`
 
 
-eSIR <- data.frame(matrix(rep(NA,h2),nrow=h2, ncol= ncol(params.set)+5))
+eSIR <- data.frame(matrix(rep(NA,h),nrow=h, ncol= ncol(params.set)+5))
 colnames(eSIR)<-c(names(parameters), "MaxInf", "MaxDur", "Thresh1", "Thresh0.1", "Thresh0.01")
 
-for(i in 1:h2){
+for(i in 1:h){
   eSIR[i,1:length(parameters)] <- params <- as.list(c(params.set[i,]))
   out <- as.data.frame(ode(init, times, liceSIR, params))
   eSIR[i,length(parameters)+1] <- max(out$D_h)
@@ -717,7 +477,7 @@ colnames(size)[4:5] <- c("maxCI", "minCI")
 ggplot(size, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("PRCC Outbreak Size: Bubonic/Pneumonic Plague SEIR")
+  ggtitle("PRCC Outbreak Size: Ectoparasite SIR")
 
 duration<-prcc_duration$PRCC
 duration$param<-rownames(duration)
@@ -726,7 +486,7 @@ colnames(duration)[4:5] <- c("maxCI", "minCI")
 ggplot(duration, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("PRCC Outbreak Duration: Bubonic/Pneumonic Plague SEIR")
+  ggtitle("PRCC Outbreak Duration: Ectoparasite SIR")
 
 # Comparative Figure for All Models ---------------------------------------
 
