@@ -1,0 +1,410 @@
+---
+title: 'Justinianic Plague Modelling: Time Course Figures'
+author: "Lauren White"
+date: "8/31/2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning = FALSE, cache=TRUE, tidy.opts=list(width.cutoff=80),tidy=TRUE)
+```
+
+## Load ODE functions and define initial conditions
+
+* Load ODE functions from file `Plague_model_functions.R'
+* Define initial conditions and expected values for each model
+* Numerically integrate each ODE model or given set of parameters and initial conditions
+
+```{r}
+library(deSolve)
+library(tidyr)
+library(ggplot2)
+
+source('~/JustinianPlague/Plague_model_functions.R')
+
+time <- seq(0, 1000, by = 1) #how long to integrate over [time interval (days)]?
+
+S_h0<-500000 #Intial condition- number of humans
+N_r0<-S_h0 #Intial condition- number of rats
+
+# Bubonic SIR: Flea/Rat/Human Model-----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category for rats, fleas, and huamns
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIR, parms = parameters))
+bubonicSIR_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, sigma_h= 1/4, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIR, parms = parameters))
+bubonicSEIR_out$time<-NULL
+
+
+# Bubonic SIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIRratK, parms = parameters))
+bSIRrK_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSEIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIRratsK, parms = parameters))
+bSEIRrK_out$time<-NULL
+
+# Pneumonic plague SIR -------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonic_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
+pneumonic_out$time<-NULL
+
+# Pneumonic Plague SEIR ------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, E_h= 0, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSEIR, parms = parameters))
+pneumonicSEIR_out$time<-NULL
+
+# Bubonic/Pneumonic SEIR -----------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_b=0, E_p=0, I_b = 0, I_p =0, R_h=0, D_h=0) 
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_b=0.19, beta_p = 0.08, sigma_b= 1/4, sigma_p=1/4.3, gamma_b=1/10, gamma_p=1/2.5, p=0.10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bp_out <- as.data.frame(ode(y = init, times = time, func = bubonic_pneumonicSEIR, parms = parameters))
+bp_out$time<-NULL
+
+
+#Maximum number of fatalities for each model
+
+max(bubonicSIR_out$D_h)
+max(bubonicSEIR_out$D_h)
+max(bSIRrK_out$D_h)
+max(bSEIRrK_out$D_h)
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
+max(bp_out$D_h)
+
+#Function to calculate how long outbreak has mortalities/day>100
+calc_duration<-function(out){
+ difference<-as.vector(NA)
+  for(j in 2:length(out$D_h)){
+    difference[j-1]<-out$D_h[j]-out$D_h[j-1]
+  }
+ return(c(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0), max(difference)))
+}
+
+(bSIR_dur<-calc_duration(bubonicSIR_out))
+(bSEIR_dur<-calc_duration(bubonicSEIR_out))
+(bSIRrK_dur<-calc_duration(bSIRrK_out))
+(bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
+(bp_dur<-calc_duration(bp_out))
+
+
+```
+
+## Figure 1
+
+Plot comparing time courses of each of the hypothesized models using expected values.
+
+```{r}
+comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bSIRrK=bSIRrK_out$D_h, bSEIRrK=bSEIRrK_out$D_h, bpSEIR=bp_out$D_h)
+write.csv(comp, "NumberDead2019_09_03.csv")
+
+long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
+
+long_DF$Model <- as.character(long_DF$Model)
+long_DF$Model <- factor(long_DF$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+tiff("Fig1.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+g<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
+  ylab("Number of Human Mortalities")+ xlab("Outbreak Duration (Days)")+
+   scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+g
+dev.off()
+g
+
+```
+
+## Repeat with different initial conditions
+
+
+```{r}
+S_h0<-500000 #Intial condition- number of humans
+N_r0<-S_h0*0.5 #Intial condition- number of rats
+```
+
+```{r}
+# Bubonic SIR: Flea/Rat/Human Model-----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category for rats, fleas, and huamns
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIR, parms = parameters))
+bubonicSIR_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, sigma_h= 1/4, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIR, parms = parameters))
+bubonicSEIR_out$time<-NULL
+
+
+# Bubonic SIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIRratK, parms = parameters))
+bSIRrK_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSEIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIRratsK, parms = parameters))
+bSEIRrK_out$time<-NULL
+
+# Pneumonic plague SIR -------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonic_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
+pneumonic_out$time<-NULL
+
+# Pneumonic Plague SEIR ------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, E_h= 0, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSEIR, parms = parameters))
+pneumonicSEIR_out$time<-NULL
+
+# Bubonic/Pneumonic SEIR -----------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_b=0, E_p=0, I_b = 0, I_p =0, R_h=0, D_h=0) 
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_b=0.19, beta_p = 0.08, sigma_b= 1/4, sigma_p=1/4.3, gamma_b=1/10, gamma_p=1/2.5, p=0.10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bp_out <- as.data.frame(ode(y = init, times = time, func = bubonic_pneumonicSEIR, parms = parameters))
+bp_out$time<-NULL
+
+#Maximum number of fatalities for each model
+
+max(bubonicSIR_out$D_h)
+max(bubonicSEIR_out$D_h)
+max(bSIRrK_out$D_h)
+max(bSEIRrK_out$D_h)
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
+max(bp_out$D_h)
+
+#Function to calculate how long outbreak has mortalities/day>100
+calc_duration<-function(out){
+ difference<-as.vector(NA)
+  for(j in 2:length(out$D_h)){
+    difference[j-1]<-out$D_h[j]-out$D_h[j-1]
+  }
+ return(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) )
+}
+
+(bSIR_dur<-calc_duration(bubonicSIR_out))
+(bSEIR_dur<-calc_duration(bubonicSEIR_out))
+(bSIRrK_dur<-calc_duration(bSIRrK_out))
+(bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
+(bp_dur<-calc_duration(bp_out))
+
+```
+
+## Figure S1
+
+Plot comparing time courses of each of the hypothesized models using expected values.
+
+```{r, echo=FALSE}
+comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bSIRrK=bSIRrK_out$D_h, bSEIRrK=bSEIRrK_out$D_h, bpSEIR=bp_out$D_h)
+
+long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
+
+tiff("FigS1.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+S1<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
+    xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
+  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))
+S1
+dev.off()
+S1
+```
+
+
+```{r}
+S_h0<-500000 #Intial condition- number of humans
+N_r0<-S_h0*2 #Intial condition- number of rats
+```
+
+```{r}
+# Bubonic SIR: Flea/Rat/Human Model-----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category for rats, fleas, and huamns
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIR, parms = parameters))
+bubonicSIR_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model----------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, sigma_h= 1/4, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bubonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIR, parms = parameters))
+bubonicSEIR_out$time<-NULL
+
+
+# Bubonic SIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, I_h = 0, R_h=0, D_h=0)
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSIRratK, parms = parameters))
+bSIRrK_out$time<-NULL
+
+# Bubonic SEIR: Flea/Rat/Human Model with Rat Carrying Capacity & Resistance----------------------------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_h=0, I_h = 0, R_h=0, D_h=0) #population size, and how many individuals start in each susceptible, infected, or removed category
+parameters <- c(r_r=0.014, K_r=N_r0, p_r=0.65, d_r=0.00055, beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bSEIRrK_out <- as.data.frame(ode(y = init, times = time, func = bubonicSEIRratsK, parms = parameters))
+bSEIRrK_out$time<-NULL
+
+# Pneumonic plague SIR -------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonic_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSIR, parms = parameters))
+pneumonic_out$time<-NULL
+
+# Pneumonic Plague SEIR ------------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_h = S_h0-1, E_h= 0, I_h = 1, D_h=0) 
+parameters <- c(beta_p = 0.08, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+pneumonicSEIR_out <- as.data.frame(ode(y = init, times = time, func = pneumonicSEIR, parms = parameters))
+pneumonicSEIR_out$time<-NULL
+
+# Bubonic/Pneumonic SEIR -----------------------------------------
+
+#Define initial conditions and parameter values
+init <- c(S_r=N_r0-1, I_r=1, R_r=0, D_r=0, H=6, Fl=0, S_h = S_h0, E_b=0, E_p=0, I_b = 0, I_p =0, R_h=0, D_h=0) 
+parameters <- c(beta_r = 1.248, alpha=3/N_r0, gamma_r = 1/5.15, g_r=0.06, r_f=0.0084, K_f=6, d_f=1/5, beta_b=0.19, beta_p = 0.08, sigma_b= 1/4, sigma_p=1/4.3, gamma_b=1/10, gamma_p=1/2.5, p=0.10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) 
+
+#Run ordinary differential equation solver
+bp_out <- as.data.frame(ode(y = init, times = time, func = bubonic_pneumonicSEIR, parms = parameters))
+bp_out$time<-NULL
+
+#Maximum number of fatalities for each model
+max(bubonicSIR_out$D_h)
+max(bubonicSEIR_out$D_h)
+max(bSIRrK_out$D_h)
+max(bSEIRrK_out$D_h)
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
+max(bp_out$D_h)
+
+#Function to calculate how long outbreak has mortalities/day>100
+calc_duration<-function(out){
+ difference<-as.vector(NA)
+  for(j in 2:length(out$D_h)){
+    difference[j-1]<-out$D_h[j]-out$D_h[j-1]
+  }
+ return(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) )
+}
+
+(bSIR_dur<-calc_duration(bubonicSIR_out))
+(bSEIR_dur<-calc_duration(bubonicSEIR_out))
+(bSIRrK_dur<-calc_duration(bSIRrK_out))
+(bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
+(bp_dur<-calc_duration(bp_out))
+
+```
+
+### Figure S2
+
+Plot comparing time courses of each of the hypothesized models using expected values.
+
+```{r}
+comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bSIRrK=bSIRrK_out$D_h, bSEIRrK=bSEIRrK_out$D_h, bpSEIR=bp_out$D_h)
+
+long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
+
+tiff("FigS2.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+S2<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
+  xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
+  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))
+S2
+dev.off()
+S2
+```
+
