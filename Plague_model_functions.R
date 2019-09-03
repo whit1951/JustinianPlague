@@ -7,7 +7,7 @@ library(deSolve)
 #Set up system of ordinary differential equations
 pneumonicSIR <- function(time, state, parameters) {
   with(as.list(c(state, parameters)), {
-    N_h <- S_h + I_h + D_h
+    N_h <- S_h + I_h
     dS_h <- b_h*S_h -beta_p * S_h * I_h/N_h -d_h*S_h
     dI_h <- beta_p * S_h * I_h/N_h - gamma_p*I_h
     dD_h <- gamma_p*I_h #Deaths due to disease related mortality
@@ -24,7 +24,7 @@ pneumonicSIR <- function(time, state, parameters) {
 #Set up system of ordinary differential equations
 pneumonicSEIR <- function(time, state, parameters) {
   with(as.list(c(state, parameters)), {
-    N_h<- S_h + E_h+ I_h + D_h
+    N_h<- S_h + E_h+ I_h
     dS_h <- b_h*S_h -beta_p * S_h * I_h/N_h -d_h*S_h
     dE_h<-  beta_p * S_h * I_h/N_h - sigma_p*E_h
     dI_h <- sigma_p*E_h - gamma_p*I_h
