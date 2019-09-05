@@ -26,10 +26,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  pSIR[i,7]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  pSIR[i,8]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  pSIR[i,9]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  pSIR[i,10]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  pSIR[i,7]<- length(which(difference>100)) 
+  pSIR[i,8]<-length(which(difference>10))
+  pSIR[i,9]<-length(which(difference>1)) 
+  pSIR[i,10]<-length(which(difference>250))
   
   }
 
@@ -58,10 +58,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  pSEIR[i,8]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  pSEIR[i,9]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  pSEIR[i,10]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  pSEIR[i,11]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  pSEIR[i,8]<-length(which(difference>100))
+  pSEIR[i,9]<-length(which(difference>10))
+  pSEIR[i,10]<-length(which(difference>1))
+  pSEIR[i,11]<-length(which(difference>250))
   
 }
 
@@ -87,10 +87,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  bSIR[i,length(parameters)+3]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  bSIR[i,length(parameters)+4]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  bSIR[i,length(parameters)+5]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  bSIR[i,length(parameters)+6]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  bSIR[i,length(parameters)+3]<-length(which(difference>100))
+  bSIR[i,length(parameters)+4]<-length(which(difference>10))
+  bSIR[i,length(parameters)+5]<-length(which(difference>1))
+  bSIR[i,length(parameters)+6]<-length(which(difference>250))
 }
 
 
@@ -116,10 +116,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  bSEIR[i,length(parameters)+3]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  bSEIR[i,length(parameters)+4]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  bSEIR[i,length(parameters)+5]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  bSEIR[i,length(parameters)+6]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  bSEIR[i,length(parameters)+3]<-length(which(difference>100))
+  bSEIR[i,length(parameters)+4]<-length(which(difference>10))
+  bSEIR[i,length(parameters)+5]<-length(which(difference>1)) 
+  bSEIR[i,length(parameters)+6]<-length(which(difference>250))
   
 }
 
@@ -145,10 +145,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  bSIRrK[i,length(parameters)+3]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  bSIRrK[i,length(parameters)+4]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  bSIRrK[i,length(parameters)+5]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  bSIRrK[i,length(parameters)+6]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  bSIRrK[i,length(parameters)+3]<-length(which(difference>100))
+  bSIRrK[i,length(parameters)+4]<-length(which(difference>10)) 
+  bSIRrK[i,length(parameters)+5]<-length(which(difference>1)) 
+  bSIRrK[i,length(parameters)+6]<-length(which(difference>250))
   
 }
 
@@ -175,10 +175,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  bSEIRrK[i,length(parameters)+3]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  bSEIRrK[i,length(parameters)+4]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  bSEIRrK[i,length(parameters)+5]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  bSEIRrK[i,length(parameters)+6]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  bSEIRrK[i,length(parameters)+3]<-length(which(difference>100))
+  bSEIRrK[i,length(parameters)+4]<-length(which(difference>10)) 
+  bSEIRrK[i,length(parameters)+5]<-length(which(difference>1))
+  bSEIRrK[i,length(parameters)+6]<-length(which(difference>250))
   
 }
 
@@ -206,10 +206,10 @@ for(i in 1:h){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
-  bpSEIR[i,length(parameters)+3]<-ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) 
-  bpSEIR[i,length(parameters)+4]<-ifelse(length(which(difference>10)[length(which(difference>10))])>0, which(difference>10)[length(which(difference>10))], 0) 
-  bpSEIR[i,length(parameters)+5]<-ifelse(length(which(difference>1)[length(which(difference>1))])>0, which(difference>1)[length(which(difference>1))], 0) 
-  bpSEIR[i,length(parameters)+6]<-ifelse(length(which(difference>250)[length(which(difference>250))])>0, which(difference>250)[length(which(difference>250))], 0) 
+  bpSEIR[i,length(parameters)+3]<-length(which(difference>100))
+  bpSEIR[i,length(parameters)+4]<-length(which(difference>10))
+  bpSEIR[i,length(parameters)+5]<-length(which(difference>1)) 
+  bpSEIR[i,length(parameters)+6]<-length(which(difference>250))
   
 }
 
