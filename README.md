@@ -10,5 +10,5 @@
 
 ## Rmd files
 * `JustinianicPlagueModellingFigures.Rmd`- produces time courses of ODE models from `PlagueModelFunctions.R`; produces Fig. 1., Fig. S1 and Fig. S2
-* `UniformLHSPRCC.Rmd`- Using uniform LHS distributions, creates boxplots, scatterplots, and PRCC graphs with confidnce intervals using * * `LHSNonuniform.R` and `GlobalSensitivityAnalysis.R`; produces Fig. S3
-* `NonUniformLHSPRCC.Rmd`-Using nonuniform LHS distributions, creates boxplots, scatterplots, and PRCC graphs with confidnce intervals using `LHSNonuniform.R` and `GlobalSensitivityAnalysis.R`; produces Fig. 2 and Figs S4-S7
+* `UniformLHSPRCC.Rmd`- Using uniform LHS distributions, creates boxplots, scatterplots, and PRCC graphs with confidence intervals using  `LHSNonuniform.R` and `GlobalSensitivityAnalysis.R`; produces Fig. S3
+* `NonUniformLHSPRCC.Rmd`-Using nonuniform LHS distributions, creates boxplots, scatterplots, and PRCC graphs with confidence intervals using `LHSNonuniform.R` and `GlobalSensitivityAnalysis.R`; produces Fig. 2 and Figs S4-S7
