@@ -104,12 +104,12 @@ bp_out$time<-NULL
 
 #Maximum number of fatalities for each model
 
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
 max(bubonicSIR_out$D_h)
 max(bubonicSEIR_out$D_h)
 max(bSIRrK_out$D_h)
 max(bSEIRrK_out$D_h)
-max(pneumonic_out$D_h)
-max(pneumonicSEIR_out$D_h)
 max(bp_out$D_h)
 
 #Function to calculate how long outbreak has mortalities/day>100
@@ -118,17 +118,17 @@ calc_duration<-function(out){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
- return(c(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0), max(difference)))
+ # return(difference)
+ return(c(length(which(difference>100)), length(which(difference>250)), max(difference)))
 }
 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bSIR_dur<-calc_duration(bubonicSIR_out))
 (bSEIR_dur<-calc_duration(bubonicSEIR_out))
 (bSIRrK_dur<-calc_duration(bSIRrK_out))
 (bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
-(pSIR_dur<-calc_duration(pneumonic_out))
-(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bp_dur<-calc_duration(bp_out))
-
 
 ```
 
@@ -138,7 +138,7 @@ Plot comparing time courses of each of the hypothesized models using expected va
 
 ```{r}
 comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_h, bSIR=bubonicSIR_out$D_h, bSEIR=bubonicSEIR_out$D_h, bSIRrK=bSIRrK_out$D_h, bSEIRrK=bSEIRrK_out$D_h, bpSEIR=bp_out$D_h)
-write.csv(comp, "NumberDead2019_09_03.csv")
+write.csv(comp, "NumberDead2019_09_04.csv")
 
 long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
 
@@ -239,12 +239,12 @@ bp_out$time<-NULL
 
 #Maximum number of fatalities for each model
 
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
 max(bubonicSIR_out$D_h)
 max(bubonicSEIR_out$D_h)
 max(bSIRrK_out$D_h)
 max(bSEIRrK_out$D_h)
-max(pneumonic_out$D_h)
-max(pneumonicSEIR_out$D_h)
 max(bp_out$D_h)
 
 #Function to calculate how long outbreak has mortalities/day>100
@@ -253,16 +253,18 @@ calc_duration<-function(out){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
- return(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) )
+ # return(difference)
+ return(c(length(which(difference>100)), length(which(difference>250)), max(difference)))
 }
 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bSIR_dur<-calc_duration(bubonicSIR_out))
 (bSEIR_dur<-calc_duration(bubonicSEIR_out))
 (bSIRrK_dur<-calc_duration(bSIRrK_out))
 (bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
-(pSIR_dur<-calc_duration(pneumonic_out))
-(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bp_dur<-calc_duration(bp_out))
+
 
 ```
 
@@ -278,7 +280,9 @@ long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR
 tiff("FigS1.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
 S1<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
     xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
-  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))
+  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 S1
 dev.off()
 S1
@@ -363,12 +367,13 @@ bp_out <- as.data.frame(ode(y = init, times = time, func = bubonic_pneumonicSEIR
 bp_out$time<-NULL
 
 #Maximum number of fatalities for each model
+
+max(pneumonic_out$D_h)
+max(pneumonicSEIR_out$D_h)
 max(bubonicSIR_out$D_h)
 max(bubonicSEIR_out$D_h)
 max(bSIRrK_out$D_h)
 max(bSEIRrK_out$D_h)
-max(pneumonic_out$D_h)
-max(pneumonicSEIR_out$D_h)
 max(bp_out$D_h)
 
 #Function to calculate how long outbreak has mortalities/day>100
@@ -377,16 +382,18 @@ calc_duration<-function(out){
   for(j in 2:length(out$D_h)){
     difference[j-1]<-out$D_h[j]-out$D_h[j-1]
   }
- return(ifelse(length(which(difference>100)[length(which(difference>100))])>0, which(difference>100)[length(which(difference>100))], 0) )
+ # return(difference)
+ return(c(length(which(difference>100)), length(which(difference>250)), max(difference)))
 }
 
+(pSIR_dur<-calc_duration(pneumonic_out))
+(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bSIR_dur<-calc_duration(bubonicSIR_out))
 (bSEIR_dur<-calc_duration(bubonicSEIR_out))
 (bSIRrK_dur<-calc_duration(bSIRrK_out))
 (bSEIRrK_dur<-calc_duration(bSEIRrK_out)) 
-(pSIR_dur<-calc_duration(pneumonic_out))
-(pSEIR_dur<-calc_duration(pneumonicSEIR_out))
 (bp_dur<-calc_duration(bp_out))
+
 
 ```
 
@@ -402,7 +409,9 @@ long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR
 tiff("FigS2.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
 S2<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
   xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
-  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))
+  scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 S2
 dev.off()
 S2
