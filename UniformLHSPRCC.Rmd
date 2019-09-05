@@ -1,8 +1,10 @@
 ---
-title: "Uniform Sensitivity Analysis"
+title: "S1 Appendix: Uniform Sensitivity Analysis"
 author: "Lauren White"
 date: "9/1/2019"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -22,10 +24,11 @@ library(sensitivity)
 require(ggplot2)
 library(tidyverse)
 library(ggforce)
+require(deSolve)
 
 set.seed(2718) #set random seed
 times <- seq(0, 5000, by= 1) #time sequence to integrate over for all models
-h <- 200 #choose number of parameter sets/subdivisions to sample to sample
+h <- 100 #choose number of parameter sets/subdivisions to sample to sample
 N_r0<-500000  #initial conditions for ODE model- number of rats
 niter<-500 #number of times to bootstrap CI for PRCC
 
@@ -93,6 +96,66 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 ```
 
 
+## Comparative Figure Across Models
+```{r}
+# Comparative Figure for All Models ---------------------------------------
+
+comp_size<-data.frame(pSIR=pSIR$MaxInf, pSEIR= pSEIR$MaxInf, bSIR=bSIR$MaxInf, bSEIR= bSEIR$MaxInf, bSIRrK=bSIRrK$MaxInf, bSEIRrK=bSEIRrK$MaxInf, bpSEIR= bpSEIR$MaxInf) #, eSIR=eSIR$MaxInf)
+comp_dur<- data.frame(pSIR=pSIR$Thresh100, pSEIR= pSEIR$Thresh100, bSIR=bSIR$Thresh100, bSEIR= bSEIR$Thresh100, bSIRrK=bSIRrK$Thresh100, bSEIRrK=bSEIRrK$Thresh100, bpSEIR= bpSEIR$Thresh100) #, eSIR=eSIR$Thresh100)
+comp_dur250<- data.frame(pSIR=pSIR$Thresh250, pSEIR= pSEIR$Thresh250, bSIR=bSIR$Thresh250, bSEIR= bSEIR$Thresh250, bSIRrK=bSIRrK$Thresh250, bSEIRrK=bSEIRrK$Thresh250, bpSEIR= bpSEIR$Thresh250) #, eSIR=eSIR$Thresh250)
+
+
+long_DFsize <- comp_size %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFdur <- comp_dur %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFdur250 <- comp_dur250 %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFsize$Model <- as.character(long_DFsize$Model)
+long_DFsize$Model <- factor(long_DFsize$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+long_DFdur$Model <- as.character(long_DFdur$Model)
+long_DFdur$Model <- factor(long_DFdur$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+long_DFdur250$Model <- as.character(long_DFdur250$Model)
+long_DFdur250$Model <- factor(long_DFdur250$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+A<- ggplot(long_DFsize, aes(Model, NumberDead)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Number of Human\nMortalities")+ xlab("")+
+   scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  geom_hline(yintercept = 250000, color="red")+
+  ggtitle("A")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+
+B<- ggplot(long_DFdur, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Detectable Duration\n (>100 Deaths/Day) (Days)")+ xlab("")+
+      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    geom_hline(yintercept = 120, color="red")+
+  ggtitle("B")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
+  facet_zoom(ylim = c(0, 300))
+
+C<- ggplot(long_DFdur250, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Detectable Duration\n (>250 Deaths/Day) (Days)")+ xlab("")+
+      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    geom_hline(yintercept = 90, color="red")+
+  ggtitle("C")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
+  facet_zoom(ylim = c(0, 250))
+
+# multiplot(A, B, C, cols=1)
+
+tiff("FigS3.tiff", height =28 , width =20, units = "cm", compression = "lzw", res = 1200)
+multiplot(A, B, C, cols=1)
+dev.off()
+
+```
+
 ## Pneumonic Plague SIR
 
 ```{r}
@@ -159,9 +222,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS11PneumonicSIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigureS11PneumonicSIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 ```
 
 ## Pneumonic Plague SEIR
@@ -227,9 +290,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS12PneumonicSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigureS12PneumonicSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 ```
 
 ## Bubonic SIR model
@@ -310,9 +373,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigurS13BubonicSIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigurS13BubonicSIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 ```
 
 ## Bubonic SEIR
@@ -395,9 +458,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS14BubonicSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigureS14BubonicSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 ```
 
 ## Bubonic SIR with rat carrying capacity and resistance
@@ -487,9 +550,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS15BubonicSIRrK_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigureS15BubonicSIRrK_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 
 ```
 
@@ -581,9 +644,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS16BubonicSEIRrK_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
+# tiff("FigureS16BubonicSEIRrK_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 
 ```
 
@@ -677,67 +740,7 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS17bpSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
-```
-
-## Comparative Figure Across Models
-```{r}
-# Comparative Figure for All Models ---------------------------------------
-
-comp_size<-data.frame(pSIR=pSIR$MaxInf, pSEIR= pSEIR$MaxInf, bSIR=bSIR$MaxInf, bSEIR= bSEIR$MaxInf, bSIRrK=bSIRrK$MaxInf, bSEIRrK=bSEIRrK$MaxInf, bpSEIR= bpSEIR$MaxInf) #, eSIR=eSIR$MaxInf)
-comp_dur<- data.frame(pSIR=pSIR$Thresh100, pSEIR= pSEIR$Thresh100, bSIR=bSIR$Thresh100, bSEIR= bSEIR$Thresh100, bSIRrK=bSIRrK$Thresh100, bSEIRrK=bSEIRrK$Thresh100, bpSEIR= bpSEIR$Thresh100) #, eSIR=eSIR$Thresh100)
-comp_dur250<- data.frame(pSIR=pSIR$Thresh250, pSEIR= pSEIR$Thresh250, bSIR=bSIR$Thresh250, bSEIR= bSEIR$Thresh250, bSIRrK=bSIRrK$Thresh250, bSEIRrK=bSEIRrK$Thresh250, bpSEIR= bpSEIR$Thresh250) #, eSIR=eSIR$Thresh250)
-
-
-long_DFsize <- comp_size %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFdur <- comp_dur %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFdur250 <- comp_dur250 %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFsize$Model <- as.character(long_DFsize$Model)
-long_DFsize$Model <- factor(long_DFsize$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-long_DFdur$Model <- as.character(long_DFdur$Model)
-long_DFdur$Model <- factor(long_DFdur$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-long_DFdur250$Model <- as.character(long_DFdur250$Model)
-long_DFdur250$Model <- factor(long_DFdur250$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-A<- ggplot(long_DFsize, aes(Model, NumberDead)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Number of Human\nMortalities")+ xlab("")+
-   scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  geom_hline(yintercept = 250000, color="red")+
-  ggtitle("A")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
-
-B<- ggplot(long_DFdur, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Detectable Duration\n (>100 Deaths/Day) (Days)")+ xlab("")+
-      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    geom_hline(yintercept = 120, color="red")+
-  ggtitle("B")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
-  facet_zoom(ylim = c(0, 300))
-
-C<- ggplot(long_DFdur250, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Detectable Duration\n (>250 Deaths/Day) (Days)")+ xlab("")+
-      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    geom_hline(yintercept = 90, color="red")+
-  ggtitle("C")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
-  facet_zoom(ylim = c(0, 250))
-
-multiplot(A, B, C, cols=1)
-
-tiff("FigureS3ModelComparison.tiff", height =28 , width =20, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, C, cols=1)
-dev.off()
-
+# tiff("FigureS17bpSEIR_PRCCuniform.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+# multiplot(A, B, cols=2)
+# dev.off()
 ```
