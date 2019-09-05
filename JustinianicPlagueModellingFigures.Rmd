@@ -145,7 +145,7 @@ long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR
 long_DF$Model <- as.character(long_DF$Model)
 long_DF$Model <- factor(long_DF$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
 
-tiff("Fig1.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+tiff("Fig1.tiff", width=7, height=5, units="in", compression = "lzw", res=600)
 g<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
   ylab("Number of Human Mortalities")+ xlab("Outbreak Duration (Days)")+
    scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
@@ -277,7 +277,7 @@ comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_
 
 long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
 
-tiff("FigS1.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+tiff("FigS1.tiff", width=7, height=5, units="in", compression = "lzw", res=600)
 S1<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
     xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
   scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
@@ -406,7 +406,7 @@ comp<- data.frame(time= time, pSIR=pneumonic_out$D_h, pSEIR=pneumonicSEIR_out$D_
 
 long_DF <- comp %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bpSEIR, bSIRrK, bSEIRrK))
 
-tiff("FigS2.tiff", width=7, height=5, units="in", compression = "lzw", res=1200)
+tiff("FigS2.tiff", width=7, height=5, units="in", compression = "lzw", res=600)
 S2<-ggplot(long_DF, aes(time, NumberDead, col=Model)) + geom_line() +
   xlab("Outbreak Duration (Days)") + ylab("Number Dead")+
   scale_color_discrete(labels = c(pSIR="Pneumonic SIR", pSEIR="Pneumonic SEIR", bSIR="Bubonic SIR", bSEIR="Bubonic SEIR", bSIRrK="Bubonic SIR (Rat Dyn.)", bpSEIR="Bubonic & Pneumonic SEIR", bSEIRrK="Bubonic SEIR (Rat Dyn.)"))+
