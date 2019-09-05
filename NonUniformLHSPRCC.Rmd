@@ -1,8 +1,10 @@
 ---
-title: "Non Uniform Sensitivity Analysis"
+title: "S2. File: Non Uniform Sensitivity Analysis"
 author: "Lauren White"
 date: "9/1/2019"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -23,12 +25,13 @@ library(sensitivity)
 require(ggplot2)
 library(tidyverse)
 library(ggforce)
+require(deSolve)
 
 set.seed(2718) #set random seed
 times <- seq(0, 5000, by= 1) #time sequence to integrate over for all models
-h <- 200 #choose number of parameter sets/subdivisions to sample to sample
+h <- 100 #choose number of parameter sets/subdivisions to sample to sample
 N_r0<-500000  #initial conditions for ODE model- number of rats
-niter<-1000 #number of times to bootstrap CI for PRCC
+niter<-500 #number of times to bootstrap CI for PRCC
 
 #' load uniform and non uniform LHS distributions
 source('~/JustinianPlague/LHSnonuniform.R')
@@ -93,8 +96,74 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 ```
 
+## Comparative Figure Across Models
+```{r}
+# Comparative Figure for All Models ---------------------------------------
 
-## Pneumonic Plague SIR
+comp_size<-data.frame(pSIR=pSIR$MaxInf, pSEIR= pSEIR$MaxInf, bSIR=bSIR$MaxInf, bSEIR= bSEIR$MaxInf, bSIRrK=bSIRrK$MaxInf, bSEIRrK=bSEIRrK$MaxInf, bpSEIR= bpSEIR$MaxInf) #, eSIR=eSIR$MaxInf)
+comp_dur<- data.frame(pSIR=pSIR$Thresh100, pSEIR= pSEIR$Thresh100, bSIR=bSIR$Thresh100, bSEIR= bSEIR$Thresh100, bSIRrK=bSIRrK$Thresh100, bSEIRrK=bSEIRrK$Thresh100, bpSEIR= bpSEIR$Thresh100) #, eSIR=eSIR$Thresh100)
+comp_dur250<- data.frame(pSIR=pSIR$Thresh250, pSEIR= pSEIR$Thresh250, bSIR=bSIR$Thresh250, bSEIR= bSEIR$Thresh250, bSIRrK=bSIRrK$Thresh250, bSEIRrK=bSEIRrK$Thresh250, bpSEIR= bpSEIR$Thresh250) #, eSIR=eSIR$Thresh250)
+
+
+long_DFsize <- comp_size %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFdur <- comp_dur %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFdur250 <- comp_dur250 %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
+
+long_DFsize$Model <- as.character(long_DFsize$Model)
+long_DFsize$Model <- factor(long_DFsize$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+long_DFdur$Model <- as.character(long_DFdur$Model)
+long_DFdur$Model <- factor(long_DFdur$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+long_DFdur250$Model <- as.character(long_DFdur250$Model)
+long_DFdur250$Model <- factor(long_DFdur250$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
+
+A<- ggplot(long_DFsize, aes(Model, NumberDead)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Number of Human\nMortalities")+ xlab("")+
+   scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  geom_hline(yintercept = 250000, color="red")+
+  ggtitle("A")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+
+B<- ggplot(long_DFdur, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Detectable Duration\n (>100 Deaths/Day) (Days)")+ xlab("")+
+      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    geom_hline(yintercept = 120, color="red")+
+  ggtitle("B")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
+  facet_zoom(ylim = c(0, 300))
+
+C<- ggplot(long_DFdur250, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
+  ylab("Detectable Duration\n (>250 Deaths/Day) (Days)")+ xlab("")+
+      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    geom_hline(yintercept = 90, color="red")+
+  ggtitle("C")+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
+  facet_zoom(ylim = c(0, 250))
+
+# multiplot(A, B, C, cols=1)
+
+tiff("Fig2.tiff", height =28 , width =20, units = "cm", compression = "lzw", res = 1200)
+multiplot(A, B, C, cols=1)
+dev.off()
+
+```
+
+## LHS-PRCC Results
+For the pneumonic SIR model, transmission rate $(\beta_p)$ and human birth $(b_h)$ rate were positively correlated with outbreak size (Fig. S4A). Natural human death rate $(d_h)$ was negatively correlated with outbreak size (Fig. S4B). A decreasing pneumonic plague infectious period $(\gamma_p^{-1})$ was correlated with decreased outbreak size (Fig. S4A) and detectable duration (Fig. S4B).
+For the pneumonic SEIR model, transmission rate $(\beta_p)$ was positively correlated with total mortality and duration (Fig. S4 C & D). Human birth rate $(b_h)$ was positively correlated with total mortality. A decreasing pneumonic plague infectious period $(\gamma_p^{-1})$ was correlated with decreased outbreak size (Fig. S4C) and detectable duration (Fig. S4D).
+	For the bubonic SIR model, flea searching efficiency $(\alpha)$, flea death rate $(d_f)$, human recovery probability $(g_h)$ and rat recovery probability $(g_r)$ were all negatively correlated with total mortality (Fig S5A). Transmission rate from fleas to rats $(\beta_r)$, flea death rate $(d_f)$, human recovery rate $(\gamma_b)$, and probability of rat recovery $(p_r)$ were negatively correlated with outbreak duration (Fig S5B). Similarly, for the bubonic SEIR model, flea searching efficiency $(\alpha)$, flea death rate $(d_f)$, and rat recovery probability $(g_r)$ were all negatively correlated with total mortality (Fig S5C) and detectable outbreak duration (Fig S5D). 
+	For the bubonic SIR model incorporating rat dynamics, transmission rate from fleas to humans $(\beta_b)$ correlated positively with total mortality, while flea searching efficiency $(\alpha)$, flea death rate $(d_f)$, rat recovery probability $(g_r)$, and rat carrying capacity $(K_r$) had negative effects on total mortality $(Fig S6A)$. There were no significant parameters for detectable outbreak duration (Fig. S6B). For the bubonic SEIR model the same parameters had significant correlations with total mortality with the addition of probability of rat resistance $(p_r)$ having a negative correlation (Fig. S6C). Probability of rat resistance $(p_r)$ also had a negative correlation with detectable outbreak duration (Fig. S6D).
+	Finally, for the combined bubonic/pneumonic SEIR model, flea transmission efficiency $(\alpha)$, longer infectious periods of pneumonic plague in humans $(\gamma_p^{-1})$, and a shorter pneumonic plague incubation period $(\sigma_p^{-1})$ was also correlated with a higher total mortality (Fig. S7A). Flea searching efficiency $(\alpha)$ was positively correlated with outbreak duration, and a decreased bubonic incubation period in humans $(\sigma_b^{-1})$ was correlated with longer detectable outbreaks (Fig. S7B). 
+
+## Pneumonic Plague SIR- Figure S4 (Panels A & B)
 
 ```{r}
 parameters <- c(beta_p = 0.45, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
@@ -158,14 +227,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "gamma_p" = expression(gamma[p])))+
   ylim(-1,1)
 
-multiplot(A, B, cols=2)
-
-tiff("FigureS4PneumonicSIR_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
 ```
 
-## Pneumonic Plague SEIR
+## Pneumonic Plague SEIR- Figure S4 (Panels C & D)
 ```{r}
 parameters <- c(beta_p = 0.45, sigma_p= 1/4.3, gamma_p = 1/2.5, b_h=1/(25*365), d_h=1/(25*365)) 
 
@@ -206,20 +270,20 @@ duration$maxCI[which(duration$maxCI< -1)]<- -1
 duration$minCI[which(duration$minCI>1)]<-1
 duration$minCI[which(duration$minCI< -1)]<- -1
 
-A<- ggplot(size, aes(x=param, y = original)) +
+C<- ggplot(size, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("A")+
+  ggtitle("C")+
   xlab("Parameters")+
   ylab ("Partial Rank Correlation Coefficients")+
   scale_x_discrete(labels = c("beta_p" = expression(beta[p]),
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "gamma_p" = expression(gamma[p]), "sigma_p"=expression(sigma[p])))+
   ylim(-1,1)
 
-B<-ggplot(duration, aes(x=param, y = original)) +
+D<-ggplot(duration, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("B")+
+  ggtitle("D")+
   xlab("Parameters")+
   ylab (" ")+
   scale_x_discrete(labels = c("beta_p" = expression(beta[p]),
@@ -228,12 +292,12 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS5PneumonicSEIR_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
+tiff("FigS4.tiff", height =20 , width =20, units = "cm", compression = "lzw", res = 1200)
+multiplot(A, B, C, D, cols=2)
 dev.off()
 ```
 
-## Bubonic SIR model
+## Bubonic SIR model- Figure S5 (Panels A & B)
 ```{r}
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
@@ -309,14 +373,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]), "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-multiplot(A, B, cols=2)
-
-tiff("FigureS6BubonicSIR_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
 ```
 
-## Bubonic SEIR
+## Bubonic SEIR- Figure S5 (Panels C & D)
 ```{r}
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
@@ -374,34 +433,33 @@ duration$minCI[which(duration$minCI>1)]<-1
 duration$minCI[which(duration$minCI< -1)]<- -1
 
 
-A<- ggplot(size, aes(x=param, y = original)) +
+C<- ggplot(size, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("A")+
+  ggtitle("C")+
   xlab("Parameters")+
   ylab ("Partial Rank Correlation Coefficients")+
   scale_x_discrete(labels = c("alpha"=expression(alpha),"beta_h" = expression(beta[b]), "beta_r"=expression(beta[r]),
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "sigma_h"=expression(sigma[b]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]),  "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-B<-ggplot(duration, aes(x=param, y = original)) +
+D<-ggplot(duration, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("B")+
+  ggtitle("D")+
   xlab("Parameters")+
   ylab (" ")+
   scale_x_discrete(labels = c("alpha"=expression(alpha),"beta_h" = expression(beta[b]), "beta_r"=expression(beta[r]),
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "sigma_h"=expression(sigma[b]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]),  "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-multiplot(A, B, cols=2)
 
-tiff("FigureS7BubonicSEIR_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
+tiff("FigS5.tiff", height =20 , width =20, units = "cm", compression = "lzw", res = 1200)
+multiplot(A, B, C, D, cols=2)
 dev.off()
 ```
 
-## Bubonic SIR with rat carrying capacity and resistance
+## Bubonic SIR with rat carrying capacity and resistance- Figure S6 (Panels A & B)
 ```{r}
 parameters <- c(r_r=0.014, K_r=499999, p_r=0.975, d_r=0.00055, beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
@@ -486,15 +544,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]), "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-multiplot(A, B, cols=2)
-
-tiff("FigureS8BubonicSIRrK_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
-dev.off()
-
 ```
 
-## Bubonic SEIR with rat carrying capacity and resistance
+## Bubonic SEIR with rat carrying capacity and resistance- Figure S6 (Panels C & D)
 ```{r}
 parameters <- c(r_r=0.014, K_r=499999, p_r=0.975, d_r=0.00055, beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_h=0.19, sigma_h= 1/4, gamma_h=1/10, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
@@ -560,36 +612,34 @@ duration$minCI[which(duration$minCI>1)]<-1
 duration$minCI[which(duration$minCI< -1)]<- -1
 
 
-A<- ggplot(size, aes(x=param, y = original)) +
+C<- ggplot(size, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("A")+
+  ggtitle("C")+
   xlab("Parameters")+
   ylab ("Partial Rank Correlation Coefficients")+
   scale_x_discrete(labels = c("r_r"=expression(r[r]), "d_r"=expression(d[r]), "K_r"=expression(K[r]), "p_r"=expression(p[r]), "alpha"=expression(alpha),"beta_h" = expression(beta[b]), "beta_r"=expression(beta[r]), "sigma_h"=expression(sigma[b]),
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]), "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-B<-ggplot(duration, aes(x=param, y = original)) +
+D<-ggplot(duration, aes(x=param, y = original)) +
   geom_point(size = 4)+ 
   geom_errorbar(aes(ymax = maxCI, ymin = minCI))+
-  ggtitle("B")+
+  ggtitle("D")+
   xlab("Parameters")+
   ylab (" ")+
   scale_x_discrete(labels = c("r_r"=expression(r[r]), "d_r"=expression(d[r]), "K_r"=expression(K[r]), "p_r"=expression(p[r]), "alpha"=expression(alpha),"beta_h" = expression(beta[b]), "beta_r"=expression(beta[r]), "sigma_h"=expression(sigma[b]),
     "b_h" =  expression(b[h]),"d_h" = expression(d[h]), "d_f"=expression(d[f]), "gamma_h" = expression(gamma[b]), "gamma_r" = expression(gamma[r]), "g_h"=expression(g[h]), "g_r"=expression(g[r]), "K_f"=expression(K[f]), "r_f"=expression(r[f])))+
   ylim(-1,1)
 
-multiplot(A, B, cols=2)
-
-tiff("FigureS9BubonicSEIRrK_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, cols=2)
+tiff("FigS6.tiff", height =20 , width =20, units = "cm", compression = "lzw", res = 1200)
+multiplot(A, B, C, D, cols=2)
 dev.off()
 
 ```
 
 
-## Bubonic/Pneumonic SEIR
+## Bubonic/Pneumonic SEIR- Figure S7
 ```{r}
 parameters <- c(beta_r = 0.09, alpha=3/500000, gamma_r = 1/5.15, g_r=0.1, r_f=0.0084, K_f=6, d_f=1/5, beta_b=0.19, beta_p = 0.45, sigma_b= 1/6, sigma_p=1/4.3, gamma_b=1/10, gamma_p=1/2.5, p=0.2, g_h=0.34, b_h=1/(25*365), d_h=1/(25*365)) #you can play with transmission and recovery rates here
 
@@ -678,68 +728,9 @@ B<-ggplot(duration, aes(x=param, y = original)) +
 
 multiplot(A, B, cols=2)
 
-tiff("FigureS10bpSEIR_PRCC.tiff", height =8.7 , width =10, units = "cm", compression = "lzw", res = 1200)
+tiff("FigS7.tiff", height =10 , width =20, units = "cm", compression = "lzw", res = 1200)
 multiplot(A, B, cols=2)
 dev.off()
 ```
 
-## Comparative Figure Across Models
-```{r}
-# Comparative Figure for All Models ---------------------------------------
-
-comp_size<-data.frame(pSIR=pSIR$MaxInf, pSEIR= pSEIR$MaxInf, bSIR=bSIR$MaxInf, bSEIR= bSEIR$MaxInf, bSIRrK=bSIRrK$MaxInf, bSEIRrK=bSEIRrK$MaxInf, bpSEIR= bpSEIR$MaxInf) #, eSIR=eSIR$MaxInf)
-comp_dur<- data.frame(pSIR=pSIR$Thresh100, pSEIR= pSEIR$Thresh100, bSIR=bSIR$Thresh100, bSEIR= bSEIR$Thresh100, bSIRrK=bSIRrK$Thresh100, bSEIRrK=bSEIRrK$Thresh100, bpSEIR= bpSEIR$Thresh100) #, eSIR=eSIR$Thresh100)
-comp_dur250<- data.frame(pSIR=pSIR$Thresh250, pSEIR= pSEIR$Thresh250, bSIR=bSIR$Thresh250, bSEIR= bSEIR$Thresh250, bSIRrK=bSIRrK$Thresh250, bSEIRrK=bSEIRrK$Thresh250, bpSEIR= bpSEIR$Thresh250) #, eSIR=eSIR$Thresh250)
-
-
-long_DFsize <- comp_size %>% gather(Model, NumberDead, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFdur <- comp_dur %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFdur250 <- comp_dur250 %>% gather(Model, Duration, c(pSIR, pSEIR, bSIR, bSEIR, bSIRrK, bSEIRrK, bpSEIR))
-
-long_DFsize$Model <- as.character(long_DFsize$Model)
-long_DFsize$Model <- factor(long_DFsize$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-long_DFdur$Model <- as.character(long_DFdur$Model)
-long_DFdur$Model <- factor(long_DFdur$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-long_DFdur250$Model <- as.character(long_DFdur250$Model)
-long_DFdur250$Model <- factor(long_DFdur250$Model, levels=c("pSIR", "pSEIR", "bSIR", "bSEIR", "bSIRrK", "bSEIRrK", "bpSEIR"))
-
-A<- ggplot(long_DFsize, aes(Model, NumberDead)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Number of Human\nMortalities")+ xlab("")+
-   scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  geom_hline(yintercept = 250000, color="red")+
-  ggtitle("A")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
-
-B<- ggplot(long_DFdur, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Detectable Duration\n (>100 Deaths/Day) (Days)")+ xlab("")+
-      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    geom_hline(yintercept = 120, color="red")+
-  ggtitle("B")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
-  facet_zoom(ylim = c(0, 300))
-
-C<- ggplot(long_DFdur250, aes(Model, Duration)) +  geom_boxplot()+ geom_jitter(alpha=0.5) +
-  ylab("Detectable Duration\n (>250 Deaths/Day) (Days)")+ xlab("")+
-      scale_x_discrete(labels = c(pSIR="Pneumonic\nSIR", pSEIR="Pneumonic\nSEIR", bSIR="Bubonic\nSIR", bSEIR="Bubonic\nSEIR", bSIRrK="Bubonic SIR\n(Rat Dyn.)", bpSEIR="Bubonic &\nPneumonic\nSEIR", bSEIRrK="Bubonic SEIR\n(Rat Dyn.)"))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    geom_hline(yintercept = 90, color="red")+
-  ggtitle("C")+ 
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))+
-  facet_zoom(ylim = c(0, 250))
-
-multiplot(A, B, C, cols=1)
-
-tiff("Figure2ModelComparison.tiff", height =28 , width =20, units = "cm", compression = "lzw", res = 1200)
-multiplot(A, B, C, cols=1)
-dev.off()
-
-```
 
