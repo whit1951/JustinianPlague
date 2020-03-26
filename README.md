@@ -1,5 +1,7 @@
 # Justinianic Plague
 
+[![DOI](https://zenodo.org/badge/175380531.svg)](https://zenodo.org/badge/latestdoi/175380531)
+
 * `PlagueModelFunctions.R` -contains various ODE functions for hypothesized transmission routes of plague
 * `PlottingTimeCourses.R`- plots time courses and comparison time courses for different ODE models
 
